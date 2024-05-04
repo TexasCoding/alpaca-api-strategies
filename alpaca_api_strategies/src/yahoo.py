@@ -157,12 +157,13 @@ class Yahoo:
                 ticker_history["bblo" + str(n)] = BollingerBands(close=ticker_history["Close"], window=n, window_dev=2, fillna=True).bollinger_lband_indicator()
             df_ticker_temp = ticker_history.iloc[-1:, -30:].reset_index(drop=True)
             df_ticker.append(df_ticker_temp)
+            df_ticker = [x for x in df_ticker if not x.empty]
+            df_ticker = pd.concat(df_ticker)
         except Exception:
             KeyError
         pass
 
-        df_ticker = [x for x in df_ticker if not x.empty]
-        df_ticker = pd.concat(df_ticker)
+        
         return df_ticker
     
     def get_daily_ticker_info(self):

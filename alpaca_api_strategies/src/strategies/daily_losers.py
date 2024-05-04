@@ -1,4 +1,5 @@
 import os
+import time
 from src.alpaca import AlpacaAPI
 from src.yahoo import Yahoo
 from src.slack import Slack
@@ -247,13 +248,14 @@ class DailyLosers:
         # Get the buy opportunities
         buy_opportunities = []
 
-        print("Processing {loser_count} tickers from Yahoo Losers.\nThis will take appromatly {total_time} minutes to complete.".format(loser_count=len(symbols), total_time=(len(symbols) * 20.5) / 60))
+        print("Processing {loser_count} tickers from Yahoo Losers.\nThis will take appromatly {total_time} minutes to complete.".format(loser_count=len(symbols), total_time=(len(symbols) * 22) / 60))
         for i, symbol in tqdm(
             enumerate(symbols),
             desc="Processing {loser_count} tickers for trading signals".format(loser_count=len(symbols)),
         ):
             asset = self.alpaca.get_asset(symbol)
             if asset.fractionable and asset.tradable:
+                time.sleep(1)
                 ticker = Yahoo(symbol).get_daily_loser_ticker_info()
                 if ticker.sentiment.values[0] == 'bull':
                     buy_opportunities.append(ticker)
