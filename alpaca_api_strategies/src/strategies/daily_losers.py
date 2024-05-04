@@ -192,7 +192,7 @@ class DailyLosers:
         # Print or send slack messages of the sold positions
         if not sold_positions:
             # If no positions were sold, create the message
-            sold_message = "No positions sold"
+            sold_message = "No positions to sell"
         else:
             # If positions were sold, create the message
             sold_message = "Successfully{} sold the following positions:\n".format(" pretend" if not self.alpaca.market_open() else "")
@@ -247,7 +247,7 @@ class DailyLosers:
         # Get the buy opportunities
         buy_opportunities = []
 
-        print("Processing {loser_count} tickers from Yahoo Losers.\nThis will take appromatly {total_time} minutes to complete.".format(loser_count=len(symbols), total_time=(len(symbols) * 20.22) / 60))
+        print("Processing {loser_count} tickers from Yahoo Losers.\nThis will take appromatly {total_time} minutes to complete.".format(loser_count=len(symbols), total_time=(len(symbols) * 20.5) / 60))
         for i, symbol in tqdm(
             enumerate(symbols),
             desc="Processing {loser_count} tickers for trading signals".format(loser_count=len(symbols)),
