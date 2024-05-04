@@ -18,6 +18,7 @@ requests-html = "^0.10.0"
 lxml-html-clean = "^0.1.1"
 openai = "^1.25.1"
 slack-sdk = "^3.27.1"
+poetry-plugin-export = "^1.7.1"
 
 
 [build-system]
