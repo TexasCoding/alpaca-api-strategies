@@ -148,7 +148,7 @@ class Yahoo:
     def get_daily_loser_ticker_info(self):
         ticker_history = self.get_daily_stock_data()
 
-        df_ticker = pd.DataFrame()
+        df_ticker = []
         try:
             for n in [14, 30, 50, 200]:
                 ticker_history["sentiment"] = self.get_stock_news_sentiment()
@@ -159,10 +159,11 @@ class Yahoo:
             df_ticker.append(df_ticker_temp)
             df_ticker = [x for x in df_ticker if not x.empty]
             df_ticker = pd.concat(df_ticker)
+            print(df_ticker)
         except Exception:
             KeyError
         pass
-    
+
         return df_ticker
     
     def get_daily_ticker_info(self):
