@@ -57,7 +57,7 @@ class DailyLosers:
         # This is the amount to buy for each stock
         # First few days will create large positions, but will be rebalanced in the future (hopefully :D)
             
-        notional = available_cash / len(tickers)
+        notional = float(available_cash) / int(len(tickers))
 
         bought_positions = []
         # Iterate through the tickers and buy the stocks
@@ -294,7 +294,7 @@ class DailyLosers:
     ########################################################
     # Define the get_symbols function
     ########################################################
-    def get_market_losers(self, yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=60):
+    def get_market_losers(self, yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=10):
         """
         Get the symbols from the given Yahoo URL
         :param yahoo_url: Yahoo URL
