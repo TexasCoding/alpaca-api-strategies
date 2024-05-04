@@ -263,7 +263,7 @@ class DailyLosers:
                             buy_opportunities.append(ticker)
             except Exception:
                 continue
-                    
+
 
         market_losers = pd.concat(buy_opportunities, axis=0).reset_index(drop=True)
 
@@ -298,7 +298,7 @@ class DailyLosers:
     ########################################################
     # Define the get_symbols function
     ########################################################
-    def get_market_losers(self, yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=10):
+    def get_market_losers(self, yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=80):
         """
         Get the symbols from the given Yahoo URL
         :param yahoo_url: Yahoo URL
