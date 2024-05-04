@@ -95,7 +95,7 @@ class AlpacaAPI:
         }, index=[0])
         
         if not positions:
-            assets = pd.concat(cash)
+            assets = cash
         else:
             # Create DataFrame of investments
             investments = pd.DataFrame({
