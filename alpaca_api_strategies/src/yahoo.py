@@ -159,7 +159,6 @@ class Yahoo:
             df_ticker.append(df_ticker_temp)
             df_ticker = [x for x in df_ticker if not x.empty]
             df_ticker = pd.concat(df_ticker)
-            print(df_ticker)
         except Exception:
             KeyError
         pass
