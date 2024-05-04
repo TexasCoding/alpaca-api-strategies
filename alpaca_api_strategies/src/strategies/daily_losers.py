@@ -257,8 +257,9 @@ class DailyLosers:
             if asset.fractionable and asset.tradable:
                 time.sleep(1)
                 ticker = Yahoo(symbol).get_daily_loser_ticker_info()
-                if ticker.sentiment.values[0] == 'bull':
-                    buy_opportunities.append(ticker)
+                if not ticker.empty:
+                    if ticker.sentiment.values[0] == 'bull':
+                        buy_opportunities.append(ticker)
 
         market_losers = pd.concat(buy_opportunities, axis=0).reset_index(drop=True)
 
