@@ -3,7 +3,7 @@
 ## Overview
 Alpaca API Strategies is a project that aims to provide a collection of trading strategies for the Alpaca API. It is designed to help traders automate their trading decisions and optimize their investment strategies. This project is in no way to be expected or trusted to make real money. The goal is to provide a resource to help developers access the Alpaca API and easily develop strategies. I intend on keeping this project open and continue developing different strategies. It is nowwhere near a complete project. Just started with the idea on 04/28/2024 and have much to do.
 
-The only service this project uses that cost any money is OpenAi API, but it is very cheap to use.
+The only service this project uses that cost any money is OpenAi API, but it is very cheap to use. Also I can not access crypto trading from my location, so the project will only focus on stock trading for now. Possibly trading options will be added.
 
 ## Current Strategies
 - **Daily Losers**: This strategy pulls previous day losers from Yahoo Finance. Then uses yfinance to access tickers data for each loser. Sorts through Yahoo Finance buy recommendations to filter stocks more likely to rise. Ta indicators are used to help filter stocks that are oversold range. 3 articles of each are then pulled from Yahoo Finance and fed to OpenAi for sentiment analysis. The script should only be run once per day at market open. It will look for sells of current positions by filtering for overbought signals from ta indicators. Before buying for the day, it verifies at least 10% of account value is in cash, if not it will liquidate top positions to make cash available. Look through the code for more details.
@@ -53,4 +53,4 @@ Contributions to Alpaca API Strategies are welcome! If you have a new strategy t
 Alpaca API Strategies is licensed under the MIT License. See the `LICENSE` file for more information.
 
 ## Contact
-If you have any questions or suggestions regarding Alpaca API Strategies, feel free to reach out to us at [email protected]
+If you have any questions or suggestions regarding Alpaca API Strategies, feel free to reach out to us by posting in [Issues](https://github.com/TexasCoding/alpaca-api-strategies/issues)

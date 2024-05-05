@@ -150,6 +150,7 @@ class DailyLosers:
 
                 # Market sell the stock
                 try:
+                    # Market sell the stock if the market is open
                     if self.alpaca.market_open():
                         self.alpaca.market_order(symbol=row['asset'], notional=amount_to_sell, side='sell')
                 except Exception as e:
@@ -222,18 +223,22 @@ class DailyLosers:
         Get the sell assets opportunities based on the RSI and Bollinger Bands
         return: List of sell opportunities
         """
+        # Get the current positions from the Alpaca API
         current_positions = self.alpaca.get_current_positions()
-
+        # Get the symbols from the current positions that are not cash
         current_positions_symbols   = current_positions[current_positions['asset'] != 'Cash']['asset'].tolist()
+        # Get the Yahoo tickers from the symbols
         yahoo_tickers               = self.yahoo.get_tickers(current_positions_symbols)
+        # Get the assets history from the Yahoo API
         assets_history              = self.yahoo.get_ticker_data(yahoo_tickers.tickers)
 
+        # If the assets history is empty, return an empty list
         if assets_history.empty:
             return []
-        
+        # Get the sell criteria
         sell_criteria = ((assets_history[['rsi14', 'rsi30', 'rsi50', 'rsi200']] >= 70).any(axis=1)) | \
                             ((assets_history[['bbhi14', 'bbhi30', 'bbhi50', 'bbhi200']] == 1).any(axis=1))
-        # Get the filtered positions
+        # Get the filtered positions based on the sell criteria
         sell_filtered_df = assets_history[sell_criteria]
         # Get the symbol list from the filtered positions
         return sell_filtered_df['Symbol'].tolist()

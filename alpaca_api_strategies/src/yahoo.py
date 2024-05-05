@@ -2,7 +2,6 @@ import os
 import time
 
 import yfinance as yf
-from yfinance.exceptions import YFinanceDataException, YFinanceException, YFNotImplementedError
 import pandas as pd
 
 from requests import Session
@@ -20,38 +19,47 @@ from openai import OpenAI
 
 from tqdm import tqdm
 
-from pprint import pprint
-
 from dotenv import load_dotenv
 load_dotenv()
 
+# Define the CachedLimiterSession class
 class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
     pass
 
+# Define the Yahoo class
 class Yahoo:
     def __init__(self):
         pass
     
+    ########################################################
+    # Define the get_openai_sentiment function
+    ########################################################
     def get_openai_sentiment(self, symbols):
-
+        """
+        Get the sentiment of the symbols based on news articles
+        :param symbols: List of symbols
+        return: List of symbols to buy
+        """
         buy_opportunities = []
+        # Get the news articles for the symbols
         for i, symbol in tqdm(
             enumerate(symbols),
             desc="• OpenAI is analyzing the sentiment of "
             + str(len(symbols))
             + " symbols based on news articles",
         ):
-        #for symbol in symbols:
             sentiments = []
+            # Get the sentiment of the news articles for the stock
             for article in symbol['Articles']:
                 title = article['Title']
                 article_text = article['Article']
+                # Get the sentiment of the news article using the OpenAI API
                 sentiment = self.get_openai_market_sentiment(title, article_text)
                 sentiments.append(sentiment)
-
+            # If the number of BULLISH sentiments is greater than the number of BEARISH and NEUTRAL sentiments, add the symbol to the buy_opportunities list
             if sentiments.count('BULLISH') > (sentiments.count('BEARISH') + sentiments.count('NEUTRAL')):
                 buy_opportunities.append(symbol['Symbol'])
-
+        # Return the list of symbols to buy
         return buy_opportunities
 
     ########################################################
@@ -113,43 +121,45 @@ class Yahoo:
             bucket_class=MemoryQueueBucket,
             backend=SQLiteCache("yfinance.cache"),
         )
-
+        # Get the tickers from Yahoo Finance
         filtered_tickers = yf.Tickers(tickers, session=session)
         tickers_list = list(filtered_tickers.tickers.keys())
 
         articles = []
+        # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
         for i, ticker in tqdm(
             enumerate(tickers_list),
             desc="• Grabbing recommendations and news for "
             + str(len(tickers_list))
             + " assets",
         ):
-        # for ticker in tickers_list:
+            # Get the recommendations summary for the stock
             try:
                 summary = filtered_tickers.tickers[ticker].recommendations_summary
                 summary = summary.dropna()
             except Exception:
                 continue    
-
+            # If the summary is not empty, get the recommedations of the stock and add the news articles to the list, from Yahoo Finance
             if not summary.empty:
                 total_buys = summary['strongBuy'].sum() + summary['buy'].sum()
                 total_sells = summary['strongSell'].sum() + summary['sell'].sum() + summary['hold'].sum()
-
+                # If the total buys are greater than the total sells, the sentiment is bullish, otherwise it is bearish
                 if total_buys > total_sells:
                     sentiment = 'bull'
                 else:    
                     sentiment = 'bear'
-
+                # If the sentiment is bullish, get the news articles for the stock
                 if sentiment == 'bull':
                     news = filtered_tickers.tickers[ticker].news[:3]
                     #article_urls = [news['link'] for news in news]
                     article_info = []
                     for n in news:
                         article_info.append({'Title': n['title'], 'Link': n['link']})
+                    # Add the stock symbol and the news articles to the list
                     articles.append({'Symbol': ticker, 'Articles': article_info})
 
         symbols = []        
-        
+        # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
         for i, yahoo_news in tqdm(
             enumerate(articles),
             desc="• Getting news article text for "
@@ -166,9 +176,9 @@ class Yahoo:
                 articles_text.append({'Title': article['Title'], 'Article': article_text})
                 session.close()
                 time.sleep(1)
-
+            # Add the stock symbol and the news articles to the list
             symbols.append({'Symbol': yahoo_news['Symbol'], 'Articles': articles_text})
-
+        # Return the list of symbols with the news articles
         return symbols
     
     ########################################################
@@ -194,15 +204,16 @@ class Yahoo:
         """
         Get the list of tickers
         :return: list: tickers
+        I will change this at some point to remove some redundancy
         """
         session = CachedLimiterSession(
             limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
             bucket_class=MemoryQueueBucket,
             backend=SQLiteCache("yfinance.cache"),
         )
-
+        # Get the top 100 losers from Yahoo Finance
         raw_tickers = self.get_market_losers()
-
+        # Get the tickers from Yahoo Finance, and return the tickers as a Tickers object
         return yf.Tickers(raw_tickers, session=session)
     
     ########################################################
@@ -218,7 +229,7 @@ class Yahoo:
         ticker_list = list(tickers.keys())
 
         df_tech = []
-
+        # Get the daily stock data, RSI, and Bollinger Bands for the stock
         for ticker in ticker_list:
             history = tickers[ticker].history(period="1y", interval="1d")
 
@@ -235,24 +246,32 @@ class Yahoo:
                 history["bblo" + str(n)] = BollingerBands(
                     close=history["Close"], window=n, window_dev=2
                 ).bollinger_lband_indicator()
-
+            # Get the last 16 days of data
             df_tech_temp = history.iloc[-1:, -16:].reset_index(drop=True)
+            # Add the stock symbol to the DataFrame
             df_tech_temp.insert(0, "Symbol", ticker)
+            # Append the DataFrame to the list
             df_tech.append(df_tech_temp)
-
+        # If the list is not empty, concatenate the DataFrames
         if df_tech != []:
             df_tech = [x for x in df_tech if not x.empty]
             df_tech = pd.concat(df_tech)
+        # If the list is empty, create an empty DataFrame
         else:
             df_tech = pd.DataFrame()
-
+        # Return the DataFrame
         return df_tech
 
     ########################################################
     # Define the buy_criteria function
     ########################################################
     def buy_criteria(self, data):
-                # Define the buy criteria
+        """
+        Get the buy criteria for the stock
+        :param data: DataFrame: stock data
+        :return: list: tickers
+        """
+        # Get the buy criteria for the stock
         buy_criteria = (
             (data[["bblo14", "bblo30", "bblo50", "bblo200"]] == 1).any(axis=1)
         ) | ((data[["rsi14", "rsi30", "rsi50", "rsi200"]] <= 30).any(axis=1))
@@ -260,7 +279,7 @@ class Yahoo:
         # Filter the DataFrame
         buy_filtered_data = data[buy_criteria]
 
-        # Create a list of tickers to trade
+        # Return the list of tickers that meet the buy criteria
         return list(buy_filtered_data["Symbol"])
 
     ########################################################
