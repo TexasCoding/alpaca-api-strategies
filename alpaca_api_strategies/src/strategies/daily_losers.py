@@ -29,7 +29,9 @@ class DailyLosers:
     ########################################################
     def run(self):
         """
-        Run the daily losers strategy
+        Run the daily losers strategy, buy the stocks based on the market losers and openai market sentiment, and sell the stocks based on the criteria
+        Run at 9:30am EST when the market opens
+        Should only be run at market open
         """
         self.sell_positions_from_criteria()
         self.liquidate_positions_for_capital()
