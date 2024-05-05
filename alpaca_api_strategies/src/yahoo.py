@@ -1,6 +1,8 @@
 import os
+import time
 
 import yfinance as yf
+from yfinance.exceptions import YFinanceDataException, YFinanceException, YFNotImplementedError
 import pandas as pd
 
 from requests import Session
@@ -16,6 +18,10 @@ from requests_html import HTMLSession
 
 from openai import OpenAI
 
+from tqdm import tqdm
+
+from pprint import pprint
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,20 +29,31 @@ class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
     pass
 
 class Yahoo:
-    def __init__(self, symbol):
-        """
-        Initialize Yahoo Finance API
-        :param symbol: str: stock symbol
-        """
-        # Create a session with a rate limiter and cache
-        self.openai = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        session = CachedLimiterSession(
-            limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
-            bucket_class=MemoryQueueBucket,
-            backend=SQLiteCache("yfinance.cache"),
-        )
-        self.ticker = yf.Ticker(symbol, session=session)
+    def __init__(self):
+        pass
     
+    def get_openai_sentiment(self, symbols):
+
+        buy_opportunities = []
+        for i, symbol in tqdm(
+            enumerate(symbols),
+            desc="• OpenAI is analyzing the sentiment of "
+            + str(len(symbols))
+            + " symbols based on news articles",
+        ):
+        #for symbol in symbols:
+            sentiments = []
+            for article in symbol['Articles']:
+                title = article['Title']
+                article_text = article['Article']
+                sentiment = self.get_openai_market_sentiment(title, article_text)
+                sentiments.append(sentiment)
+
+            if sentiments.count('BULLISH') > (sentiments.count('BEARISH') + sentiments.count('NEUTRAL')):
+                buy_opportunities.append(symbol['Symbol'])
+
+        return buy_opportunities
+
     ########################################################
     # Define the OpenAi chat function
     ########################################################
@@ -46,7 +63,8 @@ class Yahoo:
         :param msgs: List of messages
         return: OpenAI response
         """
-        response = self.openai.chat.completions.create(
+        openai = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=msgs
         )
@@ -79,153 +97,202 @@ class Yahoo:
         message_history.pop()
         # Return the sentiment
         return sentiments[0]['signal']
+    
+    def get_articles(self, tickers):
+        """
+        Get the news articles for the given tickers
+        :param tickers: list: tickers
+        :return: list: news articles
+        """
+        session = CachedLimiterSession(
+            limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
+            bucket_class=MemoryQueueBucket,
+            backend=SQLiteCache("yfinance.cache"),
+        )
 
-    ########################################################
-    # Define the get_stock_news_sentiment function
-    ########################################################
-    def get_stock_news_sentiment(self):
-        '''
-        Get stock sentiment based on news articles, using OpenAI API and Yahoo Finance
-        :return: str: stock sentiment, Bullish or Bearish
-        '''
+        filtered_tickers = yf.Tickers(tickers, session=session)
+        tickers_list = list(filtered_tickers.tickers.keys())
+
         articles = []
-        link_count = 0
-        # Get the news articles for the stock from Yahoo Finance
-        for news in self.ticker.news:
-            session = HTMLSession()
-            response = session.get(news['link'])
-            news_text = response.html.find('.caas-body', first=True).text
-            link_count += 1
-            # Limit the number of articles to 3
-            if link_count > 3:
-                break
-            # Append the article to the list
-            articles.append({'Title': news['title'], 'Article': news_text})
+        for i, ticker in tqdm(
+            enumerate(tickers_list),
+            desc="• Grabbing recommendations and news for "
+            + str(len(tickers_list))
+            + " assets",
+        ):
+        # for ticker in tickers_list:
+            try:
+                summary = filtered_tickers.tickers[ticker].recommendations_summary
+                summary = summary.dropna()
+            except Exception:
+                continue    
 
-        sentiments = []
-        # Get the sentiment of the articles using OpenAI API
-        for article in articles:
-            sentiment = self.get_openai_market_sentiment(article['Title'], article['Article'])
-            sentiments.append({'Sentiment': sentiment})
-            
-        bulls = 0
-        bears = 0
-        # Calculate the overall sentiment
-        for sentiment in sentiments:
-            if sentiment['Sentiment'] == 'BULLISH':
-                bulls += 1
-            elif sentiment['Sentiment'] == 'BEARISH':
-                bears += 1
+            if not summary.empty:
+                total_buys = summary['strongBuy'].sum() + summary['buy'].sum()
+                total_sells = summary['strongSell'].sum() + summary['sell'].sum() + summary['hold'].sum()
 
-        if bulls > bears:
-            openai_sentiment = 'bull'
-        else:
-            openai_sentiment = 'bear'
+                if total_buys > total_sells:
+                    sentiment = 'bull'
+                else:    
+                    sentiment = 'bear'
+
+                if sentiment == 'bull':
+                    news = filtered_tickers.tickers[ticker].news[:3]
+                    #article_urls = [news['link'] for news in news]
+                    article_info = []
+                    for n in news:
+                        article_info.append({'Title': n['title'], 'Link': n['link']})
+                    articles.append({'Symbol': ticker, 'Articles': article_info})
+
+        symbols = []        
         
-        # Return the overall sentiment, Bullish or Bearish, based on the articles
-        if openai_sentiment == 'bull' and self.get_yahoo_sentiment() == 'bull':
-            return 'bull'
-        elif openai_sentiment == 'bear' and self.get_yahoo_sentiment() == 'bear':
-            return 'bear'
-        else:
-            return 'neutral'
+        for i, yahoo_news in tqdm(
+            enumerate(articles),
+            desc="• Getting news article text for "
+            + str(len(articles))
+            + " symbols",
+        ):
+            articles_text = []
+            # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
+            # Throttle the requests to 1 request per second
+            for article in yahoo_news['Articles']:
+                session = HTMLSession()
+                response = session.get(article['Link'])
+                article_text = response.html.find('.caas-body', first=True).text
+                articles_text.append({'Title': article['Title'], 'Article': article_text})
+                session.close()
+                time.sleep(1)
 
-    ########################################################
-    # Define the get_daily_stock_data function
-    ########################################################
-    def get_daily_stock_data(self):
-        """
-        Get stock data from Yahoo Finance API
-        :return: DataFrame: stock data
-        """
-        # Get the stock data, drop the columns, and reset the index
-        df = self.ticker.history(period="6mo", interval="1d")
-        df.reset_index(inplace=True)
-        df.drop(columns=['Dividends', 'Stock Splits'], inplace=True)
-        df['Date'] = df['Date'].dt.strftime('%Y/%m/%d')
-        df['Date'] = pd.to_datetime(df['Date'])
-        df = dropna(df)
-        df.insert(0, 'Symbol', self.ticker.ticker)
-        return df
+            symbols.append({'Symbol': yahoo_news['Symbol'], 'Articles': articles_text})
+
+        return symbols
     
     ########################################################
-    # Define the get_yahoo_sentiment function
+    # Define the get_loser_tickers function
     ########################################################
-    def get_yahoo_sentiment(self):
-        '''
-        Get stock sentiment based on recommendations from Yahoo Finance
-        :return: str: stock sentiment, Bullish or Bearish
-        '''
-        # Get the stock recommendations, calculate the total buys and sells, and return the sentiment
-        total_buys = self.ticker.recommendations['strongBuy'].sum() + self.ticker.recommendations['buy'].sum()
-        total_sells = self.ticker.recommendations['strongSell'].sum() + self.ticker.recommendations['sell'].sum() + self.ticker.recommendations['hold'].sum()
-        if total_buys > total_sells:
-            sentiment = 'bull'
-        else:    
-            sentiment = 'bear'
-        return sentiment
+    def get_tickers(self, tickers):
+        """
+        Get the list of tickers
+        :return: list: tickers
+        """
+        session = CachedLimiterSession(
+            limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
+            bucket_class=MemoryQueueBucket,
+            backend=SQLiteCache("yfinance.cache"),
+        )
+
+        return yf.Tickers(tickers, session=session)
 
     ########################################################
-    # Define the get_daily_loser_ticker_info function
+    # Define the get_loser_tickers function
     ########################################################
-    def get_daily_loser_ticker_info(self):
+    def get_loser_tickers(self):
         """
-        Get the daily loser stock data, RSI, and Bollinger Bands
-        And add the sentiment of the news articles
-        :return: DataFrame: stock data
+        Get the list of tickers
+        :return: list: tickers
         """
-        # Get the daily stock data
-        ticker_history = self.get_daily_stock_data()
+        session = CachedLimiterSession(
+            limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
+            bucket_class=MemoryQueueBucket,
+            backend=SQLiteCache("yfinance.cache"),
+        )
 
-        df_ticker = []
-        # Get the RSI and Bollinger Bands for the stock, and add the sentiment of the news articles
-        try:
-            for n in [14, 30, 50, 200]:
-                ticker_history["sentiment"] = self.get_stock_news_sentiment()
-                ticker_history["rsi" + str(n)] = RSIIndicator(close=ticker_history["Close"], window=n, fillna=True).rsi()
-                ticker_history["bbhi" + str(n)] = BollingerBands(close=ticker_history["Close"], window=n, window_dev=2, fillna=True).bollinger_hband_indicator()
-                ticker_history["bblo" + str(n)] = BollingerBands(close=ticker_history["Close"], window=n, window_dev=2, fillna=True).bollinger_lband_indicator()
-            df_ticker_temp = ticker_history.iloc[-1:, -30:].reset_index(drop=True)
-            df_ticker.append(df_ticker_temp)
-            df_ticker = [x for x in df_ticker if not x.empty]
-        # if there is an exception, return an empty DataFrame
-        except Exception:
-            df_ticker = pd.DataFrame()
-        # if there is no exception, return the DataFrame with the stock data
-        else:
-            df_ticker = pd.concat(df_ticker)
-        
-        return df_ticker
+        raw_tickers = self.get_market_losers()
+
+        return yf.Tickers(raw_tickers, session=session)
     
     ########################################################
-    # Define the get_daily_ticker_info function
+    # Define the get_ticker_data function
     ########################################################
-    def get_daily_ticker_info(self):
+    def get_ticker_data(self, tickers):
         """
         Get the daily stock data, RSI, and Bollinger Bands
         this function is used for the daily stock data, RSI, and Bollinger Bands
         there is no need to add the sentiment of the news articles
         :return: DataFrame: stock data
         """
-        # Get the daily stock data
-        ticker_history = self.get_daily_stock_data()
+        ticker_list = list(tickers.keys())
 
-        df_ticker = []
-        # Get the RSI and Bollinger Bands for the stock
-        try:
+        df_tech = []
+
+        for ticker in ticker_list:
+            history = tickers[ticker].history(period="1y", interval="1d")
+
             for n in [14, 30, 50, 200]:
-                ticker_history["rsi" + str(n)] = RSIIndicator(close=ticker_history["Close"], window=n, fillna=True).rsi()
-                ticker_history["bbhi" + str(n)] = BollingerBands(close=ticker_history["Close"], window=n, window_dev=2, fillna=True).bollinger_hband_indicator()
-                ticker_history["bblo" + str(n)] = BollingerBands(close=ticker_history["Close"], window=n, window_dev=2, fillna=True).bollinger_lband_indicator()
-            df_ticker_temp = ticker_history.iloc[-1:, -30:].reset_index(drop=True)
-            df_ticker.append(df_ticker_temp)
-            df_ticker = [x for x in df_ticker if not x.empty]
-        # if there is an exception, return an empty DataFrame
-        except Exception:
-            df_ticker = pd.DataFrame()
-        # if there is no exception, return the DataFrame with the stock data
-        else: 
-            df_ticker = pd.concat(df_ticker)
-            
-        return df_ticker
+                # Initialize RSI Indicator
+                history["rsi" + str(n)] = RSIIndicator(
+                    close=history["Close"], window=n
+                ).rsi()
+                # Initialize Hi BB Indicator
+                history["bbhi" + str(n)] = BollingerBands(
+                    close=history["Close"], window=n, window_dev=2
+                ).bollinger_hband_indicator()
+                # Initialize Lo BB Indicator
+                history["bblo" + str(n)] = BollingerBands(
+                    close=history["Close"], window=n, window_dev=2
+                ).bollinger_lband_indicator()
+
+            df_tech_temp = history.iloc[-1:, -16:].reset_index(drop=True)
+            df_tech_temp.insert(0, "Symbol", ticker)
+            df_tech.append(df_tech_temp)
+
+
+        df_tech = [x for x in df_tech if not x.empty]
+        df_tech = pd.concat(df_tech)
+
+        return df_tech
+
+    ########################################################
+    # Define the buy_criteria function
+    ########################################################
+    def buy_criteria(self, data):
+                # Define the buy criteria
+        buy_criteria = (
+            (data[["bblo14", "bblo30", "bblo50", "bblo200"]] == 1).any(axis=1)
+        ) | ((data[["rsi14", "rsi30", "rsi50", "rsi200"]] <= 30).any(axis=1))
+
+        # Filter the DataFrame
+        buy_filtered_data = data[buy_criteria]
+
+        # Create a list of tickers to trade
+        return list(buy_filtered_data["Symbol"])
+
+    ########################################################
+    # Define the get_raw_info function
+    ########################################################
+    def get_raw_info(self, site):
+        """
+        Get the raw information from the given site
+        :param site: Site URL
+        return: DataFrame with the raw information
+        """
+        # Create a HTMLSession object
+        session = HTMLSession()
+        response = session.get(site)
+        # Get the tables from the site
+        tables = pd.read_html(response.html.raw_html)
+        df = tables[0].copy()
+        df.columns = tables[0].columns
+        # Close the session
+        session.close()
+        return df
+
+    ########################################################
+    # Define the get_symbols function
+    ########################################################
+    def get_market_losers(self, yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100):
+        """
+        Get the symbols from the given Yahoo URL
+        :param yahoo_url: Yahoo URL
+        :param asset_type: Asset type (stock, etf, etc.)
+        :param top: Number of top symbols to get
+        return: List of symbols from the Yahoo URL
+        """
+        df_stock = self.get_raw_info(yahoo_url)
+        df_stock["asset_type"] = asset_type
+        df_stock = df_stock.head(top)
+
+        df_opportunities = pd.concat([df_stock], axis=0).reset_index(drop=True)
+
+        return list(df_opportunities['Symbol'])
     

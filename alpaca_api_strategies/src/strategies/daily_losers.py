@@ -1,12 +1,9 @@
 import os
 import time
+
+from src.global_functions import *
 from src.alpaca import AlpacaAPI
 from src.yahoo import Yahoo
-from src.slack import Slack
-
-import pandas as pd
-from requests_html import HTMLSession
-from tqdm import tqdm
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -18,34 +15,61 @@ class DailyLosers:
     Should only be run at market open, and will be run at 9:30am EST
     """
     def __init__(self):
+        self.yahoo = Yahoo()
         # Initialize the Alpaca API
         self.alpaca = AlpacaAPI()
-        self.slack = Slack()
+        # self.slack = Slack()
         self.production = os.getenv('PRODUCTION')
-        self.slack_username = os.getenv('SLACK_USERNAME')
+        # self.slack_username = os.getenv('SLACK_USERNAME')
     
-    ########################################################
-    # Define the run function
-    ########################################################
+    #######################################################
+    #Define the run function
+    #######################################################
     def run(self):
         """
         Run the daily losers strategy, buy the stocks based on the market losers and openai market sentiment, and sell the stocks based on the criteria
         Run at 9:30am EST when the market opens
         Should only be run at market open
         """
+        # Sleep for 60 seconds to make sure the market is open
+        if self.production == 'True':
+            time.sleep(60)
+        # Sell the positions based on the criteria
         self.sell_positions_from_criteria()
+        # Liquidate the positions to make cash 10% of the portfolio
         self.liquidate_positions_for_capital()
+        # Buy stocks based on the market losers, limit to 5 stocks by default
         self.buy_orders()
 
+    #######################################################
+    # Define the get_buy_opportunities function
+    #######################################################
+    def get_buy_opportunities(self):
+        """
+        Get the buy opportunities based on the market losers and openai market sentiment
+        return: List of buy opportunities
+        """
+        # Get the tickers from the Yahoo API
+        tickers                 = self.yahoo.get_loser_tickers().tickers
+        # Get the ticker data from the Yahoo API
+        tickers_data            = self.yahoo.get_ticker_data(tickers)
+        # Filter the buy tickers based on the buy criteria
+        buy_tickers             = self.yahoo.buy_criteria(tickers_data)
+        # Get news and recommendations for the buy tickers from the Yahoo API
+        news_recommendations    = self.yahoo.get_articles(buy_tickers)
+        # Get the openai sentiment for the news articles
+        buy_recommedations       = self.yahoo.get_openai_sentiment(news_recommendations)
+        # Return the buy recommendations, as a list
+        return buy_recommedations
+    
     ########################################################
     # Define the buy_orders function
     ########################################################
-    def buy_orders(self):
+    def buy_orders(self, limit=5):
         """
-        Buy the stocks based on the market losers
-        The strategy is to buy the stocks that are losers that are oversold based on RSI and Bollinger Bands
-        return: True if the function is successful
-        return: False if market is closed
+        Buy the stocks based on the buy opportunities, limit to 5 stocks by default
+        Should only be run at market open
+        Send a slack message with the bought positions, or print the bought positions
         """
         
         # Get the tickers from the get_ticker_info function and convert symbols to a list
@@ -55,26 +79,19 @@ class DailyLosers:
         df_current_positions = self.alpaca.get_current_positions()
         available_cash = df_current_positions[df_current_positions['asset'] == 'Cash']['qty'].values[0]
 
-        # Calculate the notional value for each stock
-        # Divide the available cash by the number of tickers
         # This is the amount to buy for each stock
-        # First few days will create large positions, but will be rebalanced in the future (hopefully :D)
-        
         notional = float(available_cash) / int(len(tickers))
 
         bought_positions = []
         # Iterate through the tickers and buy the stocks
-        for ticker in tickers:
+        for ticker in tickers[:limit]:
             # Market buy the stock
             try:
                 if self.alpaca.market_open():
                     self.alpaca.market_order(symbol=ticker, notional=notional)
             # If there is an error, print or send a slack message
             except Exception as e:
-                if self.production == 'False':
-                    print(f"Error buying {ticker}: {e}")
-                else:
-                    self.slack.send_message(channel='#app-development', message=f"Error buying {ticker}:\n {e}", username=self.slack_username)
+                send_message(f"Error buying {ticker}: {e}")
                 continue
             else:
                 bought_positions.append({'symbol': ticker, 'notional': round(notional, 2)})
@@ -90,10 +107,7 @@ class DailyLosers:
                 bought_message += "${qty} of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
 
         # Print or send the message
-        if self.production == 'False':
-            print(bought_message)
-        else:
-            self.slack.send_message(channel='#app-development', message=bought_message, username=self.slack_username)
+        send_message(bought_message)
 
     ########################################################
     # Define the liquidate_positions_for_capital function
@@ -107,15 +121,11 @@ class DailyLosers:
         """
         current_positions = self.alpaca.get_current_positions()
 
-        # If no current positions or market is closed, exit the function by returning
-        if current_positions.iloc[0]['asset'] == 'Cash':
-            print("No current positions to liquidate for capital")
-            return
-
         cash_row        = current_positions[current_positions['asset'] == 'Cash']
         total_holdings  = current_positions['market_value'].sum()
 
-        if cash_row['market_value'].values[0] / total_holdings < 0.1:
+        sold_positions = []
+        if float(cash_row['market_value'].values[0]) / float(total_holdings) < 0.1:
             # Remove the cash row
             curpositions = current_positions[current_positions['asset'] != 'Cash']
             # Sort the positions by profit percentage
@@ -126,7 +136,6 @@ class DailyLosers:
             top_performers_market_value = top_performers['market_value'].sum()
             cash_needed                 = total_holdings * 0.1 - cash_row['market_value'].values[0]
 
-            sold_positions = []
             # Sell the top performers to make cash 10% of the portfolio
             for index, row in top_performers.iterrows():
                 print(f"Selling {row['asset']} to make cash 10% portfolio cash requirement")
@@ -142,28 +151,22 @@ class DailyLosers:
                     if self.alpaca.market_open():
                         self.alpaca.market_order(symbol=row['asset'], notional=amount_to_sell, side='sell')
                 except Exception as e:
-                        if self.production == 'False':
-                            print(f"Error selling {row['asset']}: {e}")
-                        else:
-                            self.slack.send_message(channel='#app-development', message=f"Error selling {row['asset']}:\n {e}", username=self.slack_username)
+                        send_message(f"Error selling {row['asset']}: {e}")
                         continue
                 else:
                     sold_positions.append({'symbol': row['asset'], 'notional': round(amount_to_sell, 2)})
 
-            # Print or send slack messages of the sold positions
-            if not sold_positions:
-                # If no positions were sold, create the message
-                sold_message = "No positions liquidated for capital"
-            else:
-                # If positions were sold, create the message
-                sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market_open() else "")
-                for position in sold_positions:
-                    sold_message += "{qty} shares of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
-            # Print or send the message
-            if self.production == 'False':
-                print(sold_message)
-            else:
-                self.slack.send_message(channel='#app-development', message=sold_message, username=self.slack_username)
+        # Print or send slack messages of the sold positions
+        if not sold_positions:
+            # If no positions were sold, create the message
+            sold_message = "No positions liquidated for capital"
+        else:
+            # If positions were sold, create the message
+            sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market_open() else "")
+            for position in sold_positions:
+                sold_message += "{qty} shares of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
+        # Print or send the message
+        send_message(sold_message)
 
     ########################################################
     # Define the sell_positions_from_criteria function
@@ -181,24 +184,20 @@ class DailyLosers:
         current_positions = self.alpaca.get_current_positions()
 
         sold_positions = [] 
-        # If there are sell opportunities, sell the stocks
-        if sell_opportunities != []:
-            # Iterate through the sell opportunities and sell the stocks
-            for symbol in sell_opportunities:
-                # Try to sell the stock
-                try:
-                    qty = current_positions[current_positions['asset'] == symbol]['qty'].values[0]
-                    if self.alpaca.market_open():
-                        self.alpaca.market_order(symbol=symbol, qty=qty, side='sell')
-                # If there is an error, print or send a slack message
-                except Exception as e:
-                    if self.production == 'False':
-                        print(f"Error selling {symbol}: {e}")
-                    else:
-                        self.slack.send_message(channel='#app-development', message=f"Error selling {symbol}:\n {e}", username=self.slack_username)
-                # If the order was successful, append the sold position to the sold_positions list
-                else:
-                    sold_positions.append({'symbol': symbol, 'qty': qty})
+        # Iterate through the sell opportunities and sell the stocks
+        for symbol in sell_opportunities:
+            # Try to sell the stock
+            try:
+                qty = current_positions[current_positions['asset'] == symbol]['qty'].values[0]
+                if self.alpaca.market_open():
+                    self.alpaca.market_order(symbol=symbol, qty=qty, side='sell')
+            # If there is an error, print or send a slack message
+            except Exception as e:
+                send_message(f"Error selling {symbol}: {e}")
+                continue
+            # If the order was successful, append the sold position to the sold_positions list
+            else:
+                sold_positions.append({'symbol': symbol, 'qty': qty})
 
         # Print or send slack messages of the sold positions
         if not sold_positions:
@@ -210,124 +209,25 @@ class DailyLosers:
             for position in sold_positions:
                 sold_message += "{qty} shares of {symbol}\n".format(qty=position['qty'], symbol=position['symbol'])
         # Print or send the message
-        if self.production == 'False':
-            print(sold_message)
-        else:
-            self.slack.send_message(channel='#app-development', message=sold_message, username=self.slack_username)
+        send_message(sold_message)
 
     ########################################################
     # Define the get_sell_opportunities function
     ########################################################
     def get_sell_opportunities(self):
+        """
+        Get the sell assets opportunities based on the RSI and Bollinger Bands
+        return: List of sell opportunities
+        """
         current_positions = self.alpaca.get_current_positions()
 
-        # If no current positions, exit the function by returning False
-        if current_positions.iloc[0]['asset'] == 'Cash':
-            print("No current positions")
-            return []
-        # Get the current positions symbols
-        current_positions_symbols = current_positions[current_positions['asset'] != 'Cash']['asset'].tolist()
+        current_positions_symbols   = current_positions[current_positions['asset'] != 'Cash']['asset'].tolist()
+        yahoo_tickers               = self.yahoo.get_tickers(['EXPE', 'BILL', 'ATMU', 'TNC', 'TRMB', 'IR', 'CYBR'])
+        assets_history              = self.yahoo.get_ticker_data(yahoo_tickers.tickers)
 
-        sell_opportunities = []
-        # Iterate through the current positions and get the sell opportunities
-        for i, symbol in tqdm(
-            enumerate(current_positions_symbols),
-            desc="Processing {position_count} positions for sell signals.".format(position_count=len(current_positions_symbols)),
-        ):
-            ticker_opportunities = Yahoo(symbol).get_daily_ticker_info()
-            if not ticker_opportunities.empty:
-                sell_opportunities.append(list(ticker_opportunities))
-        # Concatenate the sell opportunities
-        current_positions_hist = pd.concat(sell_opportunities, axis=0).reset_index(drop=True)
-        # Filter the positions based on the indicators
-        sell_criteria = ((current_positions_hist[['rsi14', 'rsi30', 'rsi50', 'rsi200']] >= 70).any(axis=1)) | \
-                            ((current_positions_hist[['bbhi14', 'bbhi30', 'bbhi50', 'bbhi200']] == 1).any(axis=1))
+        sell_criteria = ((assets_history[['rsi14', 'rsi30', 'rsi50', 'rsi200']] >= 70).any(axis=1)) | \
+                            ((assets_history[['bbhi14', 'bbhi30', 'bbhi50', 'bbhi200']] == 1).any(axis=1))
         # Get the filtered positions
-        sell_filtered_df = current_positions_hist[sell_criteria]
+        sell_filtered_df = assets_history[sell_criteria]
         # Get the symbol list from the filtered positions
-        symbols = sell_filtered_df['Symbol'].tolist()
-
-        if not symbols:
-            print("No symbols are ready to be sold.")
-            return []
-        else:
-            return symbols
-
-    ########################################################
-    # Define the get_buy_opportunities function
-    ########################################################
-    def get_buy_opportunities(self):
-        """
-        Get the buy opportunities based on the market losers, RSI, and Bollinger Bands
-        return: List of buy opportunities
-        """
-        # Get the market losers
-        symbols = self.get_market_losers()
-        # Get the buy opportunities
-        buy_opportunities = []
-
-        print("Processing {loser_count} tickers from Yahoo Losers.\nThis will take appromatly {total_time} minutes to complete.".format(loser_count=len(symbols), total_time=(len(symbols) * 22) / 60))
-        for i, symbol in tqdm(
-            enumerate(symbols),
-            desc="Processing {loser_count} tickers for trading signals".format(loser_count=len(symbols)),
-        ):
-            try:
-                asset = self.alpaca.get_asset(symbol)
-                if asset.fractionable and asset.tradable:
-                    time.sleep(1)
-                    ticker = Yahoo(symbol).get_daily_loser_ticker_info()
-                    if not ticker.empty:
-                        if ticker.sentiment.values[0] == 'bull':
-                            buy_opportunities.append(ticker)
-            except Exception:
-                continue
-
-
-        market_losers = pd.concat(buy_opportunities, axis=0).reset_index(drop=True)
-
-        # Filter the losers based on indicators
-        buy_criteria = ((market_losers[['rsi14', 'rsi30', 'rsi50', 'rsi200']] <= 30).any(axis=1)) | \
-                          ((market_losers[['bblo14', 'bblo30', 'bblo50', 'bblo200']] == 1).any(axis=1))
-        
-        buy_filtered_df = market_losers[buy_criteria]
-            
-        return buy_filtered_df['Symbol'].tolist()
-
-    ########################################################
-    # Define the get_raw_info function
-    ########################################################
-    def get_raw_info(self, site):
-        """
-        Get the raw information from the given site
-        :param site: Site URL
-        return: DataFrame with the raw information
-        """
-        # Create a HTMLSession object
-        session = HTMLSession()
-        response = session.get(site)
-        # Get the tables from the site
-        tables = pd.read_html(response.html.raw_html)
-        df = tables[0].copy()
-        df.columns = tables[0].columns
-        # Close the session
-        session.close()
-        return df
-
-    ########################################################
-    # Define the get_symbols function
-    ########################################################
-    def get_market_losers(self, yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=80):
-        """
-        Get the symbols from the given Yahoo URL
-        :param yahoo_url: Yahoo URL
-        :param asset_type: Asset type (stock, etf, etc.)
-        :param top: Number of top symbols to get
-        return: List of symbols from the Yahoo URL
-        """
-        df_stock = self.get_raw_info(yahoo_url)
-        df_stock["asset_type"] = asset_type
-        df_stock = df_stock.head(top)
-
-        df_opportunities = pd.concat([df_stock], axis=0).reset_index(drop=True)
-
-        return list(df_opportunities['Symbol'])
+        return sell_filtered_df['Symbol'].tolist()
