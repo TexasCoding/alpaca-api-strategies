@@ -33,6 +33,7 @@ class DailyLosers:
         """
         # Sleep for 60 seconds to make sure the market is open
         if self.production == 'True':
+            print("Sleeping for 60 seconds to make sure the market is open")
             time.sleep(60)
         # Sell the positions based on the criteria
         self.sell_positions_from_criteria()
@@ -71,7 +72,7 @@ class DailyLosers:
         Should only be run at market open
         Send a slack message with the bought positions, or print the bought positions
         """
-        
+        print("Buying orders based on buy opportunities and openai sentiment. Limit to 5 stocks by default")
         # Get the tickers from the get_ticker_info function and convert symbols to a list
         tickers = self.get_buy_opportunities()
 
@@ -119,6 +120,7 @@ class DailyLosers:
         return: True if the function is successful
         return: False if the market is closed or there are no stocks to sell
         """
+        print("Liquidating positions for capital to make cash 10% of the portfolio")
         current_positions = self.alpaca.get_current_positions()
 
         cash_row        = current_positions[current_positions['asset'] == 'Cash']
@@ -178,6 +180,7 @@ class DailyLosers:
         return: True if the function is successful
         return: False if market is closed or there are no stocks to sell
         """
+        print("Selling positions based on sell criteria")
         # Get the sell opportunities
         sell_opportunities = self.get_sell_opportunities()
         # Get the current positions
@@ -222,9 +225,12 @@ class DailyLosers:
         current_positions = self.alpaca.get_current_positions()
 
         current_positions_symbols   = current_positions[current_positions['asset'] != 'Cash']['asset'].tolist()
-        yahoo_tickers               = self.yahoo.get_tickers(['EXPE', 'BILL', 'ATMU', 'TNC', 'TRMB', 'IR', 'CYBR'])
+        yahoo_tickers               = self.yahoo.get_tickers(current_positions_symbols)
         assets_history              = self.yahoo.get_ticker_data(yahoo_tickers.tickers)
 
+        if assets_history.empty:
+            return []
+        
         sell_criteria = ((assets_history[['rsi14', 'rsi30', 'rsi50', 'rsi200']] >= 70).any(axis=1)) | \
                             ((assets_history[['bbhi14', 'bbhi30', 'bbhi50', 'bbhi200']] == 1).any(axis=1))
         # Get the filtered positions

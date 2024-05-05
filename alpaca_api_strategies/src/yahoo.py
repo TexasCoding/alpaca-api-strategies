@@ -236,9 +236,11 @@ class Yahoo:
             df_tech_temp.insert(0, "Symbol", ticker)
             df_tech.append(df_tech_temp)
 
-
-        df_tech = [x for x in df_tech if not x.empty]
-        df_tech = pd.concat(df_tech)
+        if df_tech != []:
+            df_tech = [x for x in df_tech if not x.empty]
+            df_tech = pd.concat(df_tech)
+        else:
+            df_tech = pd.DataFrame()
 
         return df_tech
 
