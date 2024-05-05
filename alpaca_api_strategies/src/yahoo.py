@@ -104,6 +104,10 @@ class Yahoo:
         :param tickers: list: tickers
         :return: list: news articles
         """
+
+        # Create a CachedLimiterSession object, which is a Session object with caching and rate limiting, to avoid getting blocked
+        # Makes the request to the Yahoo Finance API slower, but avoids getting blocked
+        # On Heroku it seems to run much slower, so it might be better to run it locally if possible
         session = CachedLimiterSession(
             limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
             bucket_class=MemoryQueueBucket,
@@ -154,7 +158,7 @@ class Yahoo:
         ):
             articles_text = []
             # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
-            # Throttle the requests to 1 request per second
+            # Throttle the requests to 1 request per second to avoid getting blocked
             for article in yahoo_news['Articles']:
                 session = HTMLSession()
                 response = session.get(article['Link'])
