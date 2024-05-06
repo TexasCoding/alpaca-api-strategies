@@ -1,12 +1,17 @@
 import os
 import time
 
+from tqdm import tqdm
+
 from src.global_functions import *
 from src.alpaca import AlpacaAPI
 from src.yahoo import Yahoo
+from src.openai import OpenAIAPI
 
 from dotenv import load_dotenv
 load_dotenv()
+
+from pprint import pprint
 
 class DailyLosers:
     """
@@ -35,11 +40,9 @@ class DailyLosers:
         if self.production == 'True':
             print("Sleeping for 60 seconds to make sure the market is open")
             time.sleep(60)
-        # Sell the positions based on the criteria
+
         self.sell_positions_from_criteria()
-        # Liquidate the positions to make cash 10% of the portfolio
         self.liquidate_positions_for_capital()
-        # Buy stocks based on the market losers, limit to 5 stocks by default
         self.buy_orders()
 
     #######################################################
@@ -50,18 +53,57 @@ class DailyLosers:
         Get the buy opportunities based on the market losers and openai market sentiment
         return: List of buy opportunities
         """
+        scraped_symbols         = self.yahoo.yahoo_scrape_symbols(yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100)
         # Get the tickers from the Yahoo API
-        tickers                 = self.yahoo.get_loser_tickers().tickers
+        tickers                 = self.yahoo.get_tickers(scraped_symbols)
         # Get the ticker data from the Yahoo API
-        tickers_data            = self.yahoo.get_ticker_data(tickers)
+        tickers_data            = self.yahoo.get_ticker_data(tickers.tickers)
         # Filter the buy tickers based on the buy criteria
-        buy_tickers             = self.yahoo.buy_criteria(tickers_data)
-        # Get news and recommendations for the buy tickers from the Yahoo API
-        news_recommendations    = self.yahoo.get_articles(buy_tickers)
+        buy_tickers             = self.buy_criteria(tickers_data)
+        # remove the tickers that are not in the buy_tickers list
+        for key in list(tickers.tickers):
+            if key not in buy_tickers:
+                del tickers.tickers[key]
+
+        # Get recommendations for the buy tickers
+        recommended_tickers     = self.get_recommended_tickers(tickers)
+        # remove the tickers that are not in the recommended_tickers list
+        for key in list(tickers.tickers):
+            if key not in recommended_tickers:
+                del tickers.tickers[key]
+
+        articles_content    = self.yahoo.get_articles(tickers)
         # Get the openai sentiment for the news articles
-        buy_recommedations       = self.yahoo.get_openai_sentiment(news_recommendations)
+        buy_recommedations       = self.get_openai_sentiment(articles_content)
         # Return the buy recommendations, as a list
         return buy_recommedations
+    
+    #######################################################
+    # Define the get_recommended_tickers function
+    #######################################################
+    def get_recommended_tickers(self, tickers):
+        """
+        Get the recommended tickers based on the recommendations summary from the Yahoo API
+        :param tickers: DataFrame: tickers data
+        :return: list: recommended_tickers
+        """
+        recommendations  = self.yahoo.get_recommendations_summary(tickers)
+
+        recommended_tickers = []
+        for symbol in tickers.tickers:
+            recommended_row = list(recommendations[recommendations['Symbol'] == symbol]['Recommendations'])
+            # If the recommended row is empty, continue to the next symbol
+            try:
+                recommended = recommended_row[0]
+                bulls = recommended['buy'] + recommended['strongBuy']
+                bears = recommended['sell'] + recommended['strongSell'] + recommended['hold']
+                # If the number of BULLISH recommendations is greater than the number of BEARISH recommendations, add the symbol to the recommended_tickers list
+                if bulls > bears:
+                    recommended_tickers.append(symbol)
+            except TypeError:
+                continue 
+        # Return the recommended tickers
+        return recommended_tickers
     
     ########################################################
     # Define the buy_orders function
@@ -110,6 +152,26 @@ class DailyLosers:
         # Print or send the message
         send_message(bought_message)
 
+    ########################################################
+    # Define the buy_criteria function
+    ########################################################
+    def buy_criteria(self, data):
+        """
+        Get the buy criteria for the stock
+        :param data: DataFrame: stock data
+        :return: list: tickers
+        """
+        # Get the buy criteria for the stock
+        buy_criteria = (
+            (data[["bblo14", "bblo30", "bblo50", "bblo200"]] == 1).any(axis=1)
+        ) | ((data[["rsi14", "rsi30", "rsi50", "rsi200"]] <= 30).any(axis=1))
+
+        # Filter the DataFrame
+        buy_filtered_data = data[buy_criteria]
+
+        # Return the list of tickers that meet the buy criteria
+        return list(buy_filtered_data["Symbol"])
+    
     ########################################################
     # Define the liquidate_positions_for_capital function
     ########################################################
@@ -242,3 +304,35 @@ class DailyLosers:
         sell_filtered_df = assets_history[sell_criteria]
         # Get the symbol list from the filtered positions
         return sell_filtered_df['Symbol'].tolist()
+    
+    ########################################################
+    # Define the get_openai_sentiment function
+    ########################################################
+    def get_openai_sentiment(self, article_contents):
+        """
+        Get the sentiment of the symbols based on news articles
+        :param symbols: List of symbols
+        return: List of symbols to buy
+        """
+        openai = OpenAIAPI()
+        buy_opportunities = []
+        # Get the news articles for the symbols
+        for i, symbol in tqdm(
+            enumerate(article_contents),
+            desc="• OpenAI is analyzing the sentiment of "
+            + str(len(article_contents))
+            + " symbols based on news articles",
+        ):
+            sentiments = []
+            # Get the sentiment of the news articles for the stock
+            for article in symbol['Articles']:
+                title = article['Title']
+                article_text = article['Article']
+                # Get the sentiment of the news article using the OpenAI API
+                sentiment = openai.get_sentiment_analysis(title, article_text)
+                sentiments.append(sentiment)
+            # If the number of BULLISH sentiments is greater than the number of BEARISH and NEUTRAL sentiments, add the symbol to the buy_opportunities list
+            if sentiments.count('BULLISH') > (sentiments.count('BEARISH') + sentiments.count('NEUTRAL')):
+                buy_opportunities.append(symbol['Symbol'])
+        # Return the list of symbols to buy
+        return buy_opportunities

@@ -11,11 +11,8 @@ from pyrate_limiter import Duration, RequestRate, Limiter
 
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
-from ta.utils import dropna
 
 from requests_html import HTMLSession
-
-from openai import OpenAI
 
 from tqdm import tqdm
 
@@ -32,140 +29,70 @@ class Yahoo:
         pass
     
     ########################################################
-    # Define the get_openai_sentiment function
+    # Define the get_recommendations_summary function
     ########################################################
-    def get_openai_sentiment(self, symbols):
+    def get_recommendations_summary(self, tickers):
         """
-        Get the sentiment of the symbols based on news articles
-        :param symbols: List of symbols
-        return: List of symbols to buy
+        Get the recommendations summary for the given tickers
+        :param tickers: Dataframe: tickers
+        :return: DataFrame: recommendations summary
         """
-        buy_opportunities = []
-        # Get the news articles for the symbols
-        for i, symbol in tqdm(
-            enumerate(symbols),
-            desc="• OpenAI is analyzing the sentiment of "
-            + str(len(symbols))
-            + " symbols based on news articles",
+        print("Getting recommendations summary from Yahoo Finance.")
+        tickers_list = list(tickers.tickers)
+
+        recommendations = []
+        for i, ticker in tqdm(
+            enumerate(tickers_list),
+            desc="• Downloading recommendations for "
+            + str(len(tickers_list))
+            + " symbols from Yahoo Finance",
         ):
-            sentiments = []
-            # Get the sentiment of the news articles for the stock
-            for article in symbol['Articles']:
-                title = article['Title']
-                article_text = article['Article']
-                # Get the sentiment of the news article using the OpenAI API
-                sentiment = self.get_openai_market_sentiment(title, article_text)
-                sentiments.append(sentiment)
-            # If the number of BULLISH sentiments is greater than the number of BEARISH and NEUTRAL sentiments, add the symbol to the buy_opportunities list
-            if sentiments.count('BULLISH') > (sentiments.count('BEARISH') + sentiments.count('NEUTRAL')):
-                buy_opportunities.append(symbol['Symbol'])
-        # Return the list of symbols to buy
-        return buy_opportunities
-
-    ########################################################
-    # Define the OpenAi chat function
-    ########################################################
-    def chat(self, msgs):
-        """
-        Chat with the OpenAI API
-        :param msgs: List of messages
-        return: OpenAI response
-        """
-        openai = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=msgs
-        )
-        message = response
-        return message
-    
-    ########################################################
-    # Define the get_market_sentiment function
-    ########################################################
-    def get_openai_market_sentiment(self, title, article):
-        """
-        Get the sentiment of the article using OpenAI API sentiment analysis
-        :param article: Article
-        return: Sentiment of the article (BULLISH, BEARISH, NEUTRAL)
-        """
-        message_history = []
-        sentiments = []
-        # Send the system message to the OpenAI API
-        system_message = 'You will work as a Sentiment Analysis for Financial news. I will share news headline and article. You will only answer as:\n\n BEARISH,BULLISH,NEUTRAL. No further explanation. \n Got it?'
-        message_history.append({'content': system_message, 'role': 'user'})
-        response = self.chat(message_history)
-
-        # Send the article to the OpenAI API
-        user_message = '{}\n{}'.format(title, article)
+            # Get the recommendations summary for the stock
+            
+            summary = tickers.tickers[ticker].recommendations_summary
+            summary = summary.dropna()
+  
+            # If the summary is not empty, get the recommedations of the stock and add the news articles to the list, from Yahoo Finance
+            if not summary.empty:
+                recommendations.append({'Symbol': ticker, 'Recommendations': {'strongBuy': summary['strongBuy'].sum(), 'buy': summary['buy'].sum(), 'hold': summary['hold'].sum(), 'sell': summary['sell'].sum(), 'strongSell': summary['strongSell'].sum()}})
+            else:
+                recommendations.append({'Symbol': ticker, 'Recommendations': None})
         
-        message_history.append({'content': user_message, 'role': 'user'})
-        response = self.chat(message_history)
-        sentiments.append(
-            {'title': title, 'article': article, 'signal': response.choices[0].message.content})
-        message_history.pop()
-        # Return the sentiment
-        return sentiments[0]['signal']
+        recommendations_df = pd.DataFrame(recommendations)
+        return recommendations_df
     
+    ########################################################
+    # Define the get_articles function
+    ########################################################
     def get_articles(self, tickers):
         """
         Get the news articles for the given tickers
         :param tickers: list: tickers
         :return: list: news articles
         """
-
-        # Create a CachedLimiterSession object, which is a Session object with caching and rate limiting, to avoid getting blocked
-        # Makes the request to the Yahoo Finance API slower, but avoids getting blocked
-        # On Heroku it seems to run much slower, so it might be better to run it locally if possible
-        session = CachedLimiterSession(
-            limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
-            bucket_class=MemoryQueueBucket,
-            backend=SQLiteCache("yfinance.cache"),
-        )
-        # Get the tickers from Yahoo Finance
-        filtered_tickers = yf.Tickers(tickers, session=session)
-        tickers_list = list(filtered_tickers.tickers.keys())
+        print("Getting news articles from Yahoo Finance.")
+        tickers_list = list(tickers.tickers)
 
         articles = []
         # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
         for i, ticker in tqdm(
             enumerate(tickers_list),
-            desc="• Grabbing recommendations and news for "
+            desc="• Downloading news articles for "
             + str(len(tickers_list))
-            + " assets",
+            + " symbols from Yahoo Finance",
         ):
-            # Get the recommendations summary for the stock
-            try:
-                summary = filtered_tickers.tickers[ticker].recommendations_summary
-                summary = summary.dropna()
-            except Exception:
-                continue    
-            # If the summary is not empty, get the recommedations of the stock and add the news articles to the list, from Yahoo Finance
-            if not summary.empty:
-                total_buys = summary['strongBuy'].sum() + summary['buy'].sum()
-                total_sells = summary['strongSell'].sum() + summary['sell'].sum() + summary['hold'].sum()
-                # If the total buys are greater than the total sells, the sentiment is bullish, otherwise it is bearish
-                if total_buys > total_sells:
-                    sentiment = 'bull'
-                else:    
-                    sentiment = 'bear'
-                # If the sentiment is bullish, get the news articles for the stock
-                if sentiment == 'bull':
-                    news = filtered_tickers.tickers[ticker].news[:3]
-                    #article_urls = [news['link'] for news in news]
-                    article_info = []
-                    for n in news:
-                        article_info.append({'Title': n['title'], 'Link': n['link']})
-                    # Add the stock symbol and the news articles to the list
-                    articles.append({'Symbol': ticker, 'Articles': article_info})
+            news = tickers.tickers[ticker].news[:3]
+            #article_urls = [news['link'] for news in news]
+            article_info = []
+            for n in news:
+                article_info.append({'Title': n['title'], 'Link': n['link']})
+            # Add the stock symbol and the news articles to the list
+            articles.append({'Symbol': ticker, 'Articles': article_info})
 
-        symbols = []        
+        scraped_articles = []        
         # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
-        for i, yahoo_news in tqdm(
-            enumerate(articles),
-            desc="• Getting news article text for "
-            + str(len(articles))
-            + " symbols",
-        ):
+
+        for yahoo_news in articles:
             articles_text = []
             # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
             # Throttle the requests to 1 request per second to avoid getting blocked
@@ -177,9 +104,9 @@ class Yahoo:
                 session.close()
                 time.sleep(1)
             # Add the stock symbol and the news articles to the list
-            symbols.append({'Symbol': yahoo_news['Symbol'], 'Articles': articles_text})
+            scraped_articles.append({'Symbol': yahoo_news['Symbol'], 'Articles': articles_text})
         # Return the list of symbols with the news articles
-        return symbols
+        return scraped_articles
     
     ########################################################
     # Define the get_loser_tickers function
@@ -189,33 +116,15 @@ class Yahoo:
         Get the list of tickers
         :return: list: tickers
         """
+        # Create a CachedLimiterSession object, which is a Session object with caching and rate limiting, to avoid getting blocked
         session = CachedLimiterSession(
             limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
             bucket_class=MemoryQueueBucket,
             backend=SQLiteCache("yfinance.cache"),
         )
-
+        # Get the tickers from Yahoo Finance
         return yf.Tickers(tickers, session=session)
 
-    ########################################################
-    # Define the get_loser_tickers function
-    ########################################################
-    def get_loser_tickers(self):
-        """
-        Get the list of tickers
-        :return: list: tickers
-        I will change this at some point to remove some redundancy
-        """
-        session = CachedLimiterSession(
-            limiter=Limiter(RequestRate(2, Duration.SECOND*5)),  # max 2 requests per 5 seconds
-            bucket_class=MemoryQueueBucket,
-            backend=SQLiteCache("yfinance.cache"),
-        )
-        # Get the top 100 losers from Yahoo Finance
-        raw_tickers = self.get_market_losers()
-        # Get the tickers from Yahoo Finance, and return the tickers as a Tickers object
-        return yf.Tickers(raw_tickers, session=session)
-    
     ########################################################
     # Define the get_ticker_data function
     ########################################################
@@ -230,7 +139,12 @@ class Yahoo:
 
         df_tech = []
         # Get the daily stock data, RSI, and Bollinger Bands for the stock
-        for ticker in ticker_list:
+        for i, ticker in tqdm(
+            enumerate(ticker_list),
+            desc="• Analizing ticker data for "
+            + str(len(ticker_list))
+            + " symbols from Yahoo Finance",
+        ):
             history = tickers[ticker].history(period="1y", interval="1d")
 
             for n in [14, 30, 50, 200]:
@@ -263,26 +177,6 @@ class Yahoo:
         return df_tech
 
     ########################################################
-    # Define the buy_criteria function
-    ########################################################
-    def buy_criteria(self, data):
-        """
-        Get the buy criteria for the stock
-        :param data: DataFrame: stock data
-        :return: list: tickers
-        """
-        # Get the buy criteria for the stock
-        buy_criteria = (
-            (data[["bblo14", "bblo30", "bblo50", "bblo200"]] == 1).any(axis=1)
-        ) | ((data[["rsi14", "rsi30", "rsi50", "rsi200"]] <= 30).any(axis=1))
-
-        # Filter the DataFrame
-        buy_filtered_data = data[buy_criteria]
-
-        # Return the list of tickers that meet the buy criteria
-        return list(buy_filtered_data["Symbol"])
-
-    ########################################################
     # Define the get_raw_info function
     ########################################################
     def get_raw_info(self, site):
@@ -304,8 +198,9 @@ class Yahoo:
 
     ########################################################
     # Define the get_symbols function
+    # Losers: https://finance.yahoo.com/losers?offset=0&count=100
     ########################################################
-    def get_market_losers(self, yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100):
+    def yahoo_scrape_symbols(self, yahoo_url, top=100, asset_type='stock'):
         """
         Get the symbols from the given Yahoo URL
         :param yahoo_url: Yahoo URL
