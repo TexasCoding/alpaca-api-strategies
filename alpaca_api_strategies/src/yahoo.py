@@ -41,14 +41,13 @@ class Yahoo:
         tickers_list = list(tickers.tickers)
 
         recommendations = []
+        # Iterate over the list of tickers and get the recommendations summary
         for i, ticker in tqdm(
             enumerate(tickers_list),
             desc="• Downloading recommendations for "
             + str(len(tickers_list))
             + " symbols from Yahoo Finance",
         ):
-            # Get the recommendations summary for the stock
-            
             summary = tickers.tickers[ticker].recommendations_summary
             summary = summary.dropna()
   
@@ -57,7 +56,7 @@ class Yahoo:
                 recommendations.append({'Symbol': ticker, 'Recommendations': {'strongBuy': summary['strongBuy'].sum(), 'buy': summary['buy'].sum(), 'hold': summary['hold'].sum(), 'sell': summary['sell'].sum(), 'strongSell': summary['strongSell'].sum()}})
             else:
                 recommendations.append({'Symbol': ticker, 'Recommendations': None})
-        
+        # Create a DataFrame with the recommendations
         recommendations_df = pd.DataFrame(recommendations)
         return recommendations_df
     
@@ -81,9 +80,11 @@ class Yahoo:
             + str(len(tickers_list))
             + " symbols from Yahoo Finance",
         ):
+            # Get the news articles for the stock from Yahoo Finance and get the first 3 articles
             news = tickers.tickers[ticker].news[:3]
             #article_urls = [news['link'] for news in news]
             article_info = []
+            # Add the news article links and symbols to the list
             for n in news:
                 article_info.append({'Title': n['title'], 'Link': n['link']})
             # Add the stock symbol and the news articles to the list

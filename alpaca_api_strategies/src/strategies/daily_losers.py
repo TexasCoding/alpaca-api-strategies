@@ -40,9 +40,11 @@ class DailyLosers:
         if self.production == 'True':
             print("Sleeping for 60 seconds to make sure the market is open")
             time.sleep(60)
-
+        # Check for sell opportunities from the criteria
         self.sell_positions_from_criteria()
+        # Liquidate the positions for capital to make cash 10% of the portfolio
         self.liquidate_positions_for_capital()
+        # Buy the stocks based on the buy opportunities and openai sentiment
         self.buy_orders()
 
     #######################################################
@@ -64,18 +66,17 @@ class DailyLosers:
         for key in list(tickers.tickers):
             if key not in buy_tickers:
                 del tickers.tickers[key]
-
         # Get recommendations for the buy tickers
         recommended_tickers     = self.get_recommended_tickers(tickers)
         # remove the tickers that are not in the recommended_tickers list
         for key in list(tickers.tickers):
             if key not in recommended_tickers:
                 del tickers.tickers[key]
-
+        # Get the articles content for the buy tickers, as a list from the Yahoo API
         articles_content    = self.yahoo.get_articles(tickers)
         # Get the openai sentiment for the news articles
         buy_recommedations       = self.get_openai_sentiment(articles_content)
-        # Return the buy recommendations, as a list
+        # Return a list of buy recommendations
         return buy_recommedations
     
     #######################################################
@@ -87,9 +88,11 @@ class DailyLosers:
         :param tickers: DataFrame: tickers data
         :return: list: recommended_tickers
         """
+        # Get the recommendations summary from the Yahoo API
         recommendations  = self.yahoo.get_recommendations_summary(tickers)
 
         recommended_tickers = []
+        # Iterate through the tickers and get the recommended tickers
         for symbol in tickers.tickers:
             recommended_row = list(recommendations[recommendations['Symbol'] == symbol]['Recommendations'])
             # If the recommended row is empty, continue to the next symbol
@@ -102,7 +105,7 @@ class DailyLosers:
                     recommended_tickers.append(symbol)
             except TypeError:
                 continue 
-        # Return the recommended tickers
+        # Return the recommended tickers list
         return recommended_tickers
     
     ########################################################
@@ -161,12 +164,12 @@ class DailyLosers:
         :param data: DataFrame: stock data
         :return: list: tickers
         """
-        # Get the buy criteria for the stock
+        # Filter the DataFrame based on the buy criteria
         buy_criteria = (
             (data[["bblo14", "bblo30", "bblo50", "bblo200"]] == 1).any(axis=1)
         ) | ((data[["rsi14", "rsi30", "rsi50", "rsi200"]] <= 30).any(axis=1))
 
-        # Filter the DataFrame
+        # Get the filtered data based on the buy criteria
         buy_filtered_data = data[buy_criteria]
 
         # Return the list of tickers that meet the buy criteria
@@ -183,12 +186,15 @@ class DailyLosers:
         return: False if the market is closed or there are no stocks to sell
         """
         print("Liquidating positions for capital to make cash 10% of the portfolio")
+        # Get the current positions from the Alpaca API
         current_positions = self.alpaca.get_current_positions()
-
+        # Get the cash row from the current positions
         cash_row        = current_positions[current_positions['asset'] == 'Cash']
+        # Get the total holdings from the current positions and cash row
         total_holdings  = current_positions['market_value'].sum()
 
         sold_positions = []
+        # If the cash is less than 10% of the total holdings, liquidate the top 25% of performing stocks to make cash 10% of the portfolio
         if float(cash_row['market_value'].values[0]) / float(total_holdings) < 0.1:
             # Remove the cash row
             curpositions = current_positions[current_positions['asset'] != 'Cash']
@@ -205,19 +211,19 @@ class DailyLosers:
                 print(f"Selling {row['asset']} to make cash 10% portfolio cash requirement")
                 # Calculate the amount to sell in USD
                 amount_to_sell = int((row['market_value'] / top_performers_market_value) * cash_needed)
-                
                 # If the amount to sell is 0, continue to the next stock
                 if amount_to_sell == 0:
                     continue
-
                 # Market sell the stock
                 try:
                     # Market sell the stock if the market is open
                     if self.alpaca.market_open():
                         self.alpaca.market_order(symbol=row['asset'], notional=amount_to_sell, side='sell')
+                # If there is an error, print or send a slack message
                 except Exception as e:
                         send_message(f"Error selling {row['asset']}: {e}")
                         continue
+                # If the order was successful, append the sold position to the sold_positions list
                 else:
                     sold_positions.append({'symbol': row['asset'], 'notional': round(amount_to_sell, 2)})
 
@@ -227,6 +233,7 @@ class DailyLosers:
             sold_message = "No positions liquidated for capital"
         else:
             # If positions were sold, create the message
+            # Pretend trades if the market is closed
             sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market_open() else "")
             for position in sold_positions:
                 sold_message += "{qty} shares of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
@@ -254,6 +261,7 @@ class DailyLosers:
         for symbol in sell_opportunities:
             # Try to sell the stock
             try:
+                # Get the quantity of the stock to sell
                 qty = current_positions[current_positions['asset'] == symbol]['qty'].values[0]
                 if self.alpaca.market_open():
                     self.alpaca.market_order(symbol=symbol, qty=qty, side='sell')
@@ -316,7 +324,7 @@ class DailyLosers:
         """
         openai = OpenAIAPI()
         buy_opportunities = []
-        # Get the news articles for the symbols
+        # Iterate through the symbols and get the sentiment of the news articles
         for i, symbol in tqdm(
             enumerate(article_contents),
             desc="• OpenAI is analyzing the sentiment of "
