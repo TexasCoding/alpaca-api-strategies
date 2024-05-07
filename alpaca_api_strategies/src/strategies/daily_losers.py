@@ -61,7 +61,7 @@ class DailyLosers:
         """
         # Get the scraped symbols from the Yahoo Finance
         scraped_symbols         = self.yahoo.yahoo_scrape_symbols(yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100)
-        # Check that all tickers are fractional, if not remove them from the list
+        # Strategy only works with fractional shares, so we need to remove any non-fractional assets
         for ticker in scraped_symbols:
             asset = self.alpaca.get_asset(ticker)
             if not asset.fractionable:
