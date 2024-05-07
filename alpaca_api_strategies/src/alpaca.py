@@ -6,7 +6,7 @@ from alpaca.common.exceptions import APIError
 from alpaca.data import StockHistoricalDataClient
 from alpaca.trading.client import TradingClient
 from alpaca.data.timeframe import TimeFrame
-from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, StopOrderRequest, StopLimitOrderRequest
+from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, StopOrderRequest, StopLimitOrderRequest, ClosePositionRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.data.requests import StockBarsRequest
 
@@ -20,6 +20,49 @@ class AlpacaAPI:
         self.paper = os.getenv('APCA_PAPER')
         self.trade_client = TradingClient(api_key=self.api_key, secret_key=self.api_secret, paper=self.paper)
         self.data_client = StockHistoricalDataClient(api_key=self.api_key, secret_key=self.api_secret)
+
+    def get_historical_data(self, symbols, start, end, timeframe='day'):
+        '''
+        Get historical data for a stock
+        :param symbol: str: stock symbol
+        :param start: str: start date in format 'YYYY-MM-DD'
+        :param end: str: end date in format 'YYYY-MM-DD'
+        :param timeframe: str: 'minute', 'hour', or 'day', default 'day'
+        :return: DataFrame: historical stock data
+        '''
+        # Set timeframe
+        match timeframe:
+            case 'minute':
+                timeframe = TimeFrame.Minute
+            case 'hour':
+                timeframe = TimeFrame.Hour
+            case 'day':
+                timeframe = TimeFrame.Day
+            case 'week':
+                timeframe = TimeFrame.Week
+            case _:
+                raise ValueError('Invalid timeframe. Must be "minute", "hour", "day" or "week"')
+            
+        try:
+            # Create StockBarsRequest object
+            bars = StockBarsRequest(
+                symbol_or_symbols=symbols,
+                start=start,
+                end=end,
+                timeframe=timeframe
+            )
+            # Get historical data and return as a DataFrame
+            data = self.data_client.get_stock_bars(bars)
+
+            data_df = data.df.reset_index()
+
+            data_df.rename(columns={'symbol': 'Symbol', 'timestamp': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
+            #data_df = pd.DataFrame(data[data])
+
+            return data_df
+        # Handle APIError
+        except APIError as e:
+            raise Exception(e)
 
     ############################
     # Submit Market Order
@@ -35,6 +78,7 @@ class AlpacaAPI:
         :return: dict: order response
         '''
         try:
+            # Create MarketOrderRequest object
             order = MarketOrderRequest(
                 symbol=symbol,
                 notional=round(notional, 2) if notional else None,
@@ -42,10 +86,65 @@ class AlpacaAPI:
                 side=OrderSide.BUY if side == 'buy' else OrderSide.SELL,
                 time_in_force=TimeInForce.DAY if time_in_force == 'day' else TimeInForce.GTC
             )
-            self.trade_client.submit_order(order)
+            # Submit order and return response from Alpaca API
+            return self.trade_client.submit_order(order)
+        # Handle APIError
         except APIError as e:
             raise Exception(e)
-        
+    
+    ############################
+    # Submit Limit Order
+    ############################
+    def limit_order(self, symbol, limit_price=None, notional=None, side='buy', time_in_force='day'):
+        # Create LimitOrderRequest object
+        try:
+            order = LimitOrderRequest(
+                symbol=symbol,
+                limit_price=round(limit_price, 2) if limit_price else None,
+                notional=round(notional, 2) if notional else None,
+                side=OrderSide.BUY if side == 'buy' else TimeInForce.GTC,
+                time_in_force=TimeInForce.DAY if time_in_force == 'day' else TimeInForce.GTC
+            )
+            # Submit order and return response from Alpaca API
+            return self.trade_client.submit_order(order)
+        # Handle APIError
+        except APIError as e:
+            raise Exception(e)
+
+    ############################
+    # Get a Position
+    ############################
+    def get_position(self, symbol_or_id):
+        '''
+        Get a position from Alpaca API
+        :param symbol_or_id: str: stock symbol or asset ID
+        :return: dict: position data
+        '''
+        try:
+            # Get position by symbol or asset ID
+            position = self.trade_client.get_open_position(symbol_or_asset_id=symbol_or_id)
+            return position
+        # Handle APIErrorS
+        except APIError as e:
+            raise Exception(e)
+
+    ############################
+    # Close all Positions
+    ############################
+    def close_all_positions(self, cancel_orders=False):
+        '''
+        Close all positions
+        :param cancel_orders: bool: cancel open orders, default False
+        :return: dict: close response
+        '''
+        try:
+            # Call close_all_positions method from TradingClient class
+            close = self.trade_client.close_all_positions(cancel_orders=cancel_orders)
+            return close
+        # Handle APIError
+        except APIError as e:
+            raise Exception(e)
+
     ############################
     # Get Asset Data
     ############################

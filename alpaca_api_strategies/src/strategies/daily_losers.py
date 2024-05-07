@@ -1,12 +1,16 @@
 import os
 import time
 
+import pandas as pd
 from tqdm import tqdm
 
 from src.global_functions import *
 from src.alpaca import AlpacaAPI
 from src.yahoo import Yahoo
 from src.openai import OpenAIAPI
+
+from ta.volatility import BollingerBands
+from ta.momentum import RSIIndicator
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -55,13 +59,20 @@ class DailyLosers:
         Get the buy opportunities based on the market losers and openai market sentiment
         return: List of buy opportunities
         """
+        # Get the scraped symbols from the Yahoo Finance
         scraped_symbols         = self.yahoo.yahoo_scrape_symbols(yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100)
+        # Check that all tickers are fractional, if not remove them from the list
+        for ticker in scraped_symbols:
+            asset = self.alpaca.get_asset(ticker)
+            if not asset.fractionable:
+                scraped_symbols.remove(ticker)
+                continue
         # Get the tickers from the Yahoo API
-        tickers                 = self.yahoo.get_tickers(scraped_symbols)
+        tickers         = self.yahoo.get_tickers(scraped_symbols)
         # Get the ticker data from the Yahoo API
-        tickers_data            = self.yahoo.get_ticker_data(tickers.tickers)
+        tickers_data    = self.get_ticker_data(tickers.tickers)
         # Filter the buy tickers based on the buy criteria
-        buy_tickers             = self.buy_criteria(tickers_data)
+        buy_tickers     = self.buy_criteria(tickers_data)
         # remove the tickers that are not in the buy_tickers list
         for key in list(tickers.tickers):
             if key not in buy_tickers:
@@ -120,14 +131,15 @@ class DailyLosers:
         print("Buying orders based on buy opportunities and openai sentiment. Limit to 5 stocks by default")
         # Get the tickers from the get_ticker_info function and convert symbols to a list
         tickers = self.get_buy_opportunities()
-
         # Get the current positions and available cash
         df_current_positions = self.alpaca.get_current_positions()
         available_cash = df_current_positions[df_current_positions['asset'] == 'Cash']['qty'].values[0]
-
         # This is the amount to buy for each stock
-        notional = float(available_cash) / int(len(tickers))
-
+        if len(tickers) == 0:
+            notional = 0
+        else:
+            notional = float(available_cash) / int(len(tickers))
+            
         bought_positions = []
         # Iterate through the tickers and buy the stocks
         for ticker in tickers[:limit]:
@@ -141,7 +153,6 @@ class DailyLosers:
                 continue
             else:
                 bought_positions.append({'symbol': ticker, 'notional': round(notional, 2)})
-
         # Print or send slack messages of the bought positions
         if not bought_positions:
             # If no positions were bought, create the message
@@ -151,7 +162,6 @@ class DailyLosers:
             bought_message = "Successfully{} bought the following positions:\n".format(" pretend" if not self.alpaca.market_open() else "")
             for position in bought_positions:
                 bought_message += "${qty} of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
-
         # Print or send the message
         send_message(bought_message)
 
@@ -168,10 +178,8 @@ class DailyLosers:
         buy_criteria = (
             (data[["bblo14", "bblo30", "bblo50", "bblo200"]] == 1).any(axis=1)
         ) | ((data[["rsi14", "rsi30", "rsi50", "rsi200"]] <= 30).any(axis=1))
-
         # Get the filtered data based on the buy criteria
         buy_filtered_data = data[buy_criteria]
-
         # Return the list of tickers that meet the buy criteria
         return list(buy_filtered_data["Symbol"])
     
@@ -200,12 +208,10 @@ class DailyLosers:
             curpositions = current_positions[current_positions['asset'] != 'Cash']
             # Sort the positions by profit percentage
             curpositions = curpositions.sort_values(by='profit_pct', ascending=False) 
-
             # Sell the top 25% of performing stocks evenly to make cash 10% of total portfolio
             top_performers              = curpositions.iloc[:int(len(curpositions) // 2)]
             top_performers_market_value = top_performers['market_value'].sum()
             cash_needed                 = total_holdings * 0.1 - cash_row['market_value'].values[0]
-
             # Sell the top performers to make cash 10% of the portfolio
             for index, row in top_performers.iterrows():
                 print(f"Selling {row['asset']} to make cash 10% portfolio cash requirement")
@@ -255,7 +261,6 @@ class DailyLosers:
         sell_opportunities = self.get_sell_opportunities()
         # Get the current positions
         current_positions = self.alpaca.get_current_positions()
-
         sold_positions = [] 
         # Iterate through the sell opportunities and sell the stocks
         for symbol in sell_opportunities:
@@ -300,7 +305,7 @@ class DailyLosers:
         # Get the Yahoo tickers from the symbols
         yahoo_tickers               = self.yahoo.get_tickers(current_positions_symbols)
         # Get the assets history from the Yahoo API
-        assets_history              = self.yahoo.get_ticker_data(yahoo_tickers.tickers)
+        assets_history              = self.get_ticker_data(yahoo_tickers.tickers)
 
         # If the assets history is empty, return an empty list
         if assets_history.empty:
@@ -312,6 +317,57 @@ class DailyLosers:
         sell_filtered_df = assets_history[sell_criteria]
         # Get the symbol list from the filtered positions
         return sell_filtered_df['Symbol'].tolist()
+    
+    ########################################################
+    # Define the get_ticker_data function
+    ########################################################
+    def get_ticker_data(self, tickers):
+        """
+        Get the daily stock data, RSI, and Bollinger Bands
+        this function is used for the daily stock data, RSI, and Bollinger Bands
+        there is no need to add the sentiment of the news articles
+        :return: DataFrame: stock data
+        """
+        ticker_list = list(tickers.keys())
+
+        df_tech = []
+        # Get the daily stock data, RSI, and Bollinger Bands for the stock
+        for i, ticker in tqdm(
+            enumerate(ticker_list),
+            desc="• Analizing ticker data for "
+            + str(len(ticker_list))
+            + " symbols from Yahoo Finance",
+        ):
+            history = tickers[ticker].history(period="1y", interval="1d")
+
+            for n in [14, 30, 50, 200]:
+                # Initialize RSI Indicator
+                history["rsi" + str(n)] = RSIIndicator(
+                    close=history["Close"], window=n
+                ).rsi()
+                # Initialize Hi BB Indicator
+                history["bbhi" + str(n)] = BollingerBands(
+                    close=history["Close"], window=n, window_dev=2
+                ).bollinger_hband_indicator()
+                # Initialize Lo BB Indicator
+                history["bblo" + str(n)] = BollingerBands(
+                    close=history["Close"], window=n, window_dev=2
+                ).bollinger_lband_indicator()
+            # Get the last 16 days of data
+            df_tech_temp = history.iloc[-1:, -16:].reset_index(drop=True)
+            # Add the stock symbol to the DataFrame
+            df_tech_temp.insert(0, "Symbol", ticker)
+            # Append the DataFrame to the list
+            df_tech.append(df_tech_temp)
+        # If the list is not empty, concatenate the DataFrames
+        if df_tech != []:
+            df_tech = [x for x in df_tech if not x.empty]
+            df_tech = pd.concat(df_tech)
+        # If the list is empty, create an empty DataFrame
+        else:
+            df_tech = pd.DataFrame()
+        # Return the DataFrame
+        return df_tech
     
     ########################################################
     # Define the get_openai_sentiment function

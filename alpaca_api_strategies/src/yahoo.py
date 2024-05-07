@@ -129,53 +129,53 @@ class Yahoo:
     ########################################################
     # Define the get_ticker_data function
     ########################################################
-    def get_ticker_data(self, tickers):
-        """
-        Get the daily stock data, RSI, and Bollinger Bands
-        this function is used for the daily stock data, RSI, and Bollinger Bands
-        there is no need to add the sentiment of the news articles
-        :return: DataFrame: stock data
-        """
-        ticker_list = list(tickers.keys())
+    # def get_ticker_data(self, tickers):
+    #     """
+    #     Get the daily stock data, RSI, and Bollinger Bands
+    #     this function is used for the daily stock data, RSI, and Bollinger Bands
+    #     there is no need to add the sentiment of the news articles
+    #     :return: DataFrame: stock data
+    #     """
+    #     ticker_list = list(tickers.keys())
 
-        df_tech = []
-        # Get the daily stock data, RSI, and Bollinger Bands for the stock
-        for i, ticker in tqdm(
-            enumerate(ticker_list),
-            desc="• Analizing ticker data for "
-            + str(len(ticker_list))
-            + " symbols from Yahoo Finance",
-        ):
-            history = tickers[ticker].history(period="1y", interval="1d")
+    #     df_tech = []
+    #     # Get the daily stock data, RSI, and Bollinger Bands for the stock
+    #     for i, ticker in tqdm(
+    #         enumerate(ticker_list),
+    #         desc="• Analizing ticker data for "
+    #         + str(len(ticker_list))
+    #         + " symbols from Yahoo Finance",
+    #     ):
+    #         history = tickers[ticker].history(period="1y", interval="1d")
 
-            for n in [14, 30, 50, 200]:
-                # Initialize RSI Indicator
-                history["rsi" + str(n)] = RSIIndicator(
-                    close=history["Close"], window=n
-                ).rsi()
-                # Initialize Hi BB Indicator
-                history["bbhi" + str(n)] = BollingerBands(
-                    close=history["Close"], window=n, window_dev=2
-                ).bollinger_hband_indicator()
-                # Initialize Lo BB Indicator
-                history["bblo" + str(n)] = BollingerBands(
-                    close=history["Close"], window=n, window_dev=2
-                ).bollinger_lband_indicator()
-            # Get the last 16 days of data
-            df_tech_temp = history.iloc[-1:, -16:].reset_index(drop=True)
-            # Add the stock symbol to the DataFrame
-            df_tech_temp.insert(0, "Symbol", ticker)
-            # Append the DataFrame to the list
-            df_tech.append(df_tech_temp)
-        # If the list is not empty, concatenate the DataFrames
-        if df_tech != []:
-            df_tech = [x for x in df_tech if not x.empty]
-            df_tech = pd.concat(df_tech)
-        # If the list is empty, create an empty DataFrame
-        else:
-            df_tech = pd.DataFrame()
-        # Return the DataFrame
-        return df_tech
+    #         for n in [14, 30, 50, 200]:
+    #             # Initialize RSI Indicator
+    #             history["rsi" + str(n)] = RSIIndicator(
+    #                 close=history["Close"], window=n
+    #             ).rsi()
+    #             # Initialize Hi BB Indicator
+    #             history["bbhi" + str(n)] = BollingerBands(
+    #                 close=history["Close"], window=n, window_dev=2
+    #             ).bollinger_hband_indicator()
+    #             # Initialize Lo BB Indicator
+    #             history["bblo" + str(n)] = BollingerBands(
+    #                 close=history["Close"], window=n, window_dev=2
+    #             ).bollinger_lband_indicator()
+    #         # Get the last 16 days of data
+    #         df_tech_temp = history.iloc[-1:, -16:].reset_index(drop=True)
+    #         # Add the stock symbol to the DataFrame
+    #         df_tech_temp.insert(0, "Symbol", ticker)
+    #         # Append the DataFrame to the list
+    #         df_tech.append(df_tech_temp)
+    #     # If the list is not empty, concatenate the DataFrames
+    #     if df_tech != []:
+    #         df_tech = [x for x in df_tech if not x.empty]
+    #         df_tech = pd.concat(df_tech)
+    #     # If the list is empty, create an empty DataFrame
+    #     else:
+    #         df_tech = pd.DataFrame()
+    #     # Return the DataFrame
+    #     return df_tech
 
     ########################################################
     # Define the get_raw_info function
