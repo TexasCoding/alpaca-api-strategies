@@ -6,7 +6,7 @@ from alpaca.common.exceptions import APIError
 from alpaca.data import StockHistoricalDataClient
 from alpaca.trading.client import TradingClient
 from alpaca.data.timeframe import TimeFrame
-from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, StopOrderRequest, StopLimitOrderRequest, ClosePositionRequest
+from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.data.requests import StockBarsRequest
 
@@ -21,6 +21,9 @@ class AlpacaAPI:
         self.trade_client = TradingClient(api_key=self.api_key, secret_key=self.api_secret, paper=self.paper)
         self.data_client = StockHistoricalDataClient(api_key=self.api_key, secret_key=self.api_secret)
 
+    ############################
+    # Get Historical Stock Data
+    ############################
     def get_historical_data(self, symbols, start, end, timeframe='day'):
         '''
         Get historical data for a stock
@@ -55,7 +58,7 @@ class AlpacaAPI:
             data = self.data_client.get_stock_bars(bars)
 
             data_df = data.df.reset_index()
-
+            # Rename columns for consistency
             data_df.rename(columns={'symbol': 'Symbol', 'timestamp': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
             #data_df = pd.DataFrame(data[data])
 
@@ -96,7 +99,15 @@ class AlpacaAPI:
     # Submit Limit Order
     ############################
     def limit_order(self, symbol, limit_price=None, notional=None, side='buy', time_in_force='day'):
-        # Create LimitOrderRequest object
+        '''
+        Submit a limit order
+        :param symbol: str: stock symbol
+        :param limit_price: float: limit price for order
+        :param notional: float: total value of shares to buy or sell
+        :param side: str: 'buy' or 'sell', default 'buy'
+        :param time_in_force: str: 'day' or 'gtc', default 'day'
+        :return: dict: order response
+        '''
         try:
             order = LimitOrderRequest(
                 symbol=symbol,
