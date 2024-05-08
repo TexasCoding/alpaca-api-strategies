@@ -21,6 +21,17 @@ class AlpacaAPI:
         self.trade_client = TradingClient(api_key=self.api_key, secret_key=self.api_secret, paper=self.paper)
         self.data_client = StockHistoricalDataClient(api_key=self.api_key, secret_key=self.api_secret)
 
+    def get_account(self):
+        '''
+        Get account information
+        :return: dict: account information
+        '''
+        try:
+            account = self.trade_client.get_account()
+            return account
+        except APIError as e:
+            raise Exception(e)
+
     ############################
     # Get Historical Stock Data
     ############################
@@ -45,7 +56,7 @@ class AlpacaAPI:
                 timeframe = TimeFrame.Week
             case _:
                 raise ValueError('Invalid timeframe. Must be "minute", "hour", "day" or "week"')
-            
+        # Get historical data, handle APIError
         try:
             # Create StockBarsRequest object
             bars = StockBarsRequest(
@@ -58,10 +69,21 @@ class AlpacaAPI:
             data = self.data_client.get_stock_bars(bars)
 
             data_df = data.df.reset_index()
+
+            #data_df = data_df.sort_values(by=['timestamp'], ascending=False)
+            
+            # Drop columns that are not needed
+            try:
+                data_df.drop(columns=['trade_count', 'vwap'], inplace=True)
+                # Reformat date column
+                data_df['timestamp'] = data_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+                # # Convert date column to datetime
+                data_df['timestamp'] = pd.to_datetime(data_df['timestamp'])
+                
+            except KeyError:
+                pass
             # Rename columns for consistency
             data_df.rename(columns={'symbol': 'Symbol', 'timestamp': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
-            #data_df = pd.DataFrame(data[data])
-
             return data_df
         # Handle APIError
         except APIError as e:

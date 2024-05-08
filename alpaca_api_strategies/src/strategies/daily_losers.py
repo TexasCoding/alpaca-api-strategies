@@ -1,6 +1,11 @@
 import os
 import time
 
+import csv
+
+from datetime import date
+from datetime import timedelta
+
 import pandas as pd
 from tqdm import tqdm
 
@@ -14,8 +19,6 @@ from ta.momentum import RSIIndicator
 
 from dotenv import load_dotenv
 load_dotenv()
-
-from pprint import pprint
 
 class DailyLosers:
     """
@@ -52,6 +55,43 @@ class DailyLosers:
         self.buy_orders()
 
     #######################################################
+    # Define the save_previous_day_losers function
+    #######################################################
+    def save_previous_day_losers(self):
+        """
+        Save the previous day losers to a CSV file
+        """
+        scraped_symbols         = self.yahoo.yahoo_scrape_symbols(yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100)
+        # Check if the asset is fractionable and tradable
+        for ticker in scraped_symbols:
+            asset = self.alpaca.get_asset(ticker)
+            if not asset.fractionable or not asset.tradable:
+                scraped_symbols.remove(ticker)
+                continue
+        # Save the scraped symbols to a CSV file
+        with open('alpaca_api_strategies/src/strategies/previous_day_losers.csv', 'w') as f:
+            writer = csv.writer(f)
+            for symbol in scraped_symbols:
+                writer.writerow([symbol])
+
+        print("Saved {} previous day losers to CSV file".format(len(scraped_symbols)))
+
+    #######################################################
+    # Define the get_previous_day_losers function
+    #######################################################
+    def get_previous_day_losers(self):
+        """
+        Get the previous day losers from the CSV file
+        return: List of previous day losers
+        """
+        # Get the previous day losers from the CSV file
+        with open('alpaca_api_strategies/src/strategies/previous_day_losers.csv', 'r') as f:
+            reader = csv.reader(f)
+            symbols = list(reader)
+
+        return [x for xs in symbols for x in xs]
+
+    #######################################################
     # Define the get_buy_opportunities function
     #######################################################
     def get_buy_opportunities(self):
@@ -60,14 +100,8 @@ class DailyLosers:
         return: List of buy opportunities
         """
         # Get the scraped symbols from the Yahoo Finance
-        scraped_symbols         = self.yahoo.yahoo_scrape_symbols(yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100)
-        # Strategy only works with fractional shares, so we need to remove any non-fractional assets
-        for ticker in scraped_symbols:
-            asset = self.alpaca.get_asset(ticker)
-            if not asset.fractionable:
-                scraped_symbols.remove(ticker)
-                continue
-        # Get the tickers from the Yahoo API
+        scraped_symbols         = self.get_previous_day_losers()
+        # Get the tickers from the Yahoo API, using the scraped symbols from Yahoo Finance
         tickers         = self.yahoo.get_tickers(scraped_symbols)
         # Get the ticker data from the Yahoo API
         tickers_data    = self.get_ticker_data(tickers.tickers)
@@ -328,6 +362,9 @@ class DailyLosers:
         there is no need to add the sentiment of the news articles
         :return: DataFrame: stock data
         """
+        today = date.today()
+        year_ago = date.today() - timedelta(days=365)
+
         ticker_list = list(tickers.keys())
 
         df_tech = []
@@ -336,29 +373,34 @@ class DailyLosers:
             enumerate(ticker_list),
             desc="• Analizing ticker data for "
             + str(len(ticker_list))
-            + " symbols from Yahoo Finance",
+            + " symbols from Alpaca API",
         ):
-            history = tickers[ticker].history(period="1y", interval="1d")
-
-            for n in [14, 30, 50, 200]:
-                # Initialize RSI Indicator
-                history["rsi" + str(n)] = RSIIndicator(
-                    close=history["Close"], window=n
-                ).rsi()
-                # Initialize Hi BB Indicator
-                history["bbhi" + str(n)] = BollingerBands(
-                    close=history["Close"], window=n, window_dev=2
-                ).bollinger_hband_indicator()
-                # Initialize Lo BB Indicator
-                history["bblo" + str(n)] = BollingerBands(
-                    close=history["Close"], window=n, window_dev=2
-                ).bollinger_lband_indicator()
-            # Get the last 16 days of data
-            df_tech_temp = history.iloc[-1:, -16:].reset_index(drop=True)
-            # Add the stock symbol to the DataFrame
-            df_tech_temp.insert(0, "Symbol", ticker)
-            # Append the DataFrame to the list
-            df_tech.append(df_tech_temp)
+            history = self.alpaca.get_historical_data(symbols=ticker, start=year_ago, end=today, timeframe='day') 
+            # If the history is empty, continue to the next stock
+            if history.empty:
+                del tickers[ticker]
+                continue
+            try:
+                for n in [14, 30, 50, 200]:
+                    # Initialize RSI Indicator
+                    history["rsi" + str(n)] = RSIIndicator(
+                        close=history["Close"], window=n
+                    ).rsi()
+                    # Initialize Hi BB Indicator
+                    history["bbhi" + str(n)] = BollingerBands(
+                        close=history["Close"], window=n, window_dev=2
+                    ).bollinger_hband_indicator()
+                    # Initialize Lo BB Indicator
+                    history["bblo" + str(n)] = BollingerBands(
+                        close=history["Close"], window=n, window_dev=2
+                    ).bollinger_lband_indicator()
+                # Get the last 16 days of data
+                df_tech_temp = history.tail(1)
+                # Append the DataFrame to the list
+                df_tech.append(df_tech_temp)
+            except:
+                KeyError
+            pass
         # If the list is not empty, concatenate the DataFrames
         if df_tech != []:
             df_tech = [x for x in df_tech if not x.empty]
