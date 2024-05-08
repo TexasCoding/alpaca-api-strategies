@@ -64,6 +64,9 @@ class DailyLosers:
         scraped_symbols         = self.yahoo.yahoo_scrape_symbols(yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100)
         # Check if the asset is fractionable and tradable
         for ticker in scraped_symbols:
+            if '-' in ticker:
+                scraped_symbols.remove(ticker)
+                continue
             asset = self.alpaca.get_asset(ticker)
             if not asset.fractionable or not asset.tradable:
                 scraped_symbols.remove(ticker)
@@ -408,6 +411,8 @@ class DailyLosers:
         # If the list is empty, create an empty DataFrame
         else:
             df_tech = pd.DataFrame()
+
+        print(df_tech)
         # Return the DataFrame
         return df_tech
     

@@ -8,7 +8,7 @@ from alpaca.trading.client import TradingClient
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
-from alpaca.data.requests import StockBarsRequest
+from alpaca.data.requests import StockBarsRequest, StockLatestBarRequest, StockLatestQuoteRequest
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -21,6 +21,57 @@ class AlpacaAPI:
         self.trade_client = TradingClient(api_key=self.api_key, secret_key=self.api_secret, paper=self.paper)
         self.data_client = StockHistoricalDataClient(api_key=self.api_key, secret_key=self.api_secret)
 
+    # def get_latest_stock_bar(self, symbol):
+    #     '''
+    #     Get the latest stock bar for a single stock
+    #     :param symbol: str: stock symbol
+    #     :return: dict: latest stock bar data
+    #     '''
+    #     try:
+    #         # Create StockLatestBarRequest object
+    #         bar = StockLatestBarRequest(symbol_or_symbols=symbol)
+    #         # Get latest stock bar and return as a dictionary
+    #         data = self.data_client.get_stock_latest_bar(bar)
+        
+    #         #data_df = pd.DataFrame([data])
+
+    #         #data_df = data_df.sort_values(by=['timestamp'], ascending=False)
+            
+    #         # Drop columns that are not needed
+    #         # try:
+    #         #     data_df.drop(columns=['trade_count', 'vwap'], inplace=True)
+    #         #     # Reformat date column
+    #         #     data_df['timestamp'] = data_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+    #         #     # # Convert date column to datetime
+    #         #     data_df['timestamp'] = pd.to_datetime(data_df['timestamp'])
+                
+    #         # except KeyError:
+    #         #     pass
+    #         # # Rename columns for consistency
+    #         # data_df.rename(columns={'symbol': 'Symbol', 'timestamp': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
+    #         return dict(data[symbol])
+    #     # Handle APIError
+    #     except APIError as e:
+    #         raise Exception(e)
+        
+    # def get_latest_stock_quote(self, symbol):
+    #     '''
+    #     Get the latest stock quote for a single stock
+    #     :param symbol: str: stock symbol
+    #     :return: dict: latest stock quote data
+    #     '''
+    #     try:
+    #         # Create StockLatestQuoteRequest object
+    #         quote = StockLatestQuoteRequest(symbol_or_symbols=symbol)
+    #         # Get latest stock quote and return as a dictionary
+    #         return self.data_client.get_stock_latest_quote(quote)
+    #     # Handle APIError
+    #     except APIError as e:
+    #         raise Exception(e)
+
+    ############################
+    # Get Latest Stock Data
+    ############################
     def get_account(self):
         '''
         Get account information
