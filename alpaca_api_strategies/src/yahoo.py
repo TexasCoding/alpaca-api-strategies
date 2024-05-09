@@ -101,7 +101,7 @@ class Yahoo:
                 session = HTMLSession()
                 response = session.get(article['Link'])
                 article_text = response.html.find('.caas-body', first=True).text
-                articles_text.append({'Title': article['Title'], 'Article': article_text})
+                articles_text.append({'Title': article['Title'], 'Symbol': yahoo_news['Symbol'], 'Article': article_text})
                 session.close()
                 time.sleep(1)
             # Add the stock symbol and the news articles to the list
