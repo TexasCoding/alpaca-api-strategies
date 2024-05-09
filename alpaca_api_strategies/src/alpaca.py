@@ -1,14 +1,21 @@
 import os
 import pandas as pd
+import requests
+
+from datetime import datetime
+from datetime import timedelta
+from pytz import timezone
+
+tz = timezone('US/Eastern')
 
 from alpaca.common.exceptions import APIError
-
 from alpaca.data import StockHistoricalDataClient
 from alpaca.trading.client import TradingClient
 from alpaca.data.timeframe import TimeFrame
-from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
+from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, ClosePositionRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
-from alpaca.data.requests import StockBarsRequest, StockLatestBarRequest, StockLatestQuoteRequest
+from alpaca.data.enums import DataFeed
+from alpaca.data.requests import StockBarsRequest, StockSnapshotRequest
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -21,56 +28,68 @@ class AlpacaAPI:
         self.trade_client = TradingClient(api_key=self.api_key, secret_key=self.api_secret, paper=self.paper)
         self.data_client = StockHistoricalDataClient(api_key=self.api_key, secret_key=self.api_secret)
 
-    # def get_latest_stock_bar(self, symbol):
-    #     '''
-    #     Get the latest stock bar for a single stock
-    #     :param symbol: str: stock symbol
-    #     :return: dict: latest stock bar data
-    #     '''
-    #     try:
-    #         # Create StockLatestBarRequest object
-    #         bar = StockLatestBarRequest(symbol_or_symbols=symbol)
-    #         # Get latest stock bar and return as a dictionary
-    #         data = self.data_client.get_stock_latest_bar(bar)
-        
-    #         #data_df = pd.DataFrame([data])
+    ############################
+    # Get News Articles
+    ############################
+    def get_news_articles(self, symbol):
+        '''
+        THIS IS NOT A GREAT WAY TO GET NEWS ARTICLES
+        WORKING ON A BETTER WAY TO USE THE ALPACA API TO GET NEWS ARTICLES
+        THE ARTICLES ARE NOT VERY RELEVANT TO THE STOCK SYMBOL, IN MOST CASES
+        MAY BE ABLE TO FILTER THE ARTICLES BETTER, TO GET MORE RELEVANT ARTICLES
+        Get news articles for a stock symbol from Alpaca API
+        :param symbol: str: stock symbol
+        :return: dict: news articles
+        '''
+        ctime = datetime.now(tz)
+        today = ctime.strftime("%Y-%m-%d")
+        five_weeks_ago = (ctime - timedelta(weeks=5)).strftime("%Y-%m-%d")
 
-    #         #data_df = data_df.sort_values(by=['timestamp'], ascending=False)
-            
-    #         # Drop columns that are not needed
-    #         # try:
-    #         #     data_df.drop(columns=['trade_count', 'vwap'], inplace=True)
-    #         #     # Reformat date column
-    #         #     data_df['timestamp'] = data_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-    #         #     # # Convert date column to datetime
-    #         #     data_df['timestamp'] = pd.to_datetime(data_df['timestamp'])
-                
-    #         # except KeyError:
-    #         #     pass
-    #         # # Rename columns for consistency
-    #         # data_df.rename(columns={'symbol': 'Symbol', 'timestamp': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
-    #         return dict(data[symbol])
-    #     # Handle APIError
-    #     except APIError as e:
-    #         raise Exception(e)
-        
-    # def get_latest_stock_quote(self, symbol):
-    #     '''
-    #     Get the latest stock quote for a single stock
-    #     :param symbol: str: stock symbol
-    #     :return: dict: latest stock quote data
-    #     '''
-    #     try:
-    #         # Create StockLatestQuoteRequest object
-    #         quote = StockLatestQuoteRequest(symbol_or_symbols=symbol)
-    #         # Get latest stock quote and return as a dictionary
-    #         return self.data_client.get_stock_latest_quote(quote)
-    #     # Handle APIError
-    #     except APIError as e:
-    #         raise Exception(e)
+        url = f'https://data.alpaca.markets/v1beta1/news?start={five_weeks_ago}&end={today}&sort=desc&symbols={symbol}&include_content=true&exclude_contentless=true'
+
+        headers = {
+            'APCA-API-KEY-ID': self.api_key,
+            'APCA-API-SECRET-KEY': self.api_secret,
+            'accept': 'application/json'
+        }
+
+        response = requests.get(url, headers=headers)
+
+        return response.json()
 
     ############################
-    # Get Latest Stock Data
+    # Get Stock Snapshot
+    ############################
+    def get_stock_snapshot(self, symbol, feed='iex', currency='USD'):
+        '''
+        Get stock snapshot
+        :param symbol: str: stock symbol
+        :param feed: str: 'iex' or 'sip', default 'iex'
+        :param currency: str: 'usd' or 'cad', default 'usd'
+        '''
+        match feed:
+            case 'iex':
+                feed = DataFeed.IEX
+            case 'sip':
+                feed = DataFeed.SIP
+            case 'otc':
+                feed = DataFeed.OTC
+            case _:
+                raise ValueError('Invalid feed. Must be "iex" or "sip"')
+        
+        try:
+            params = StockSnapshotRequest(
+                symbol_or_symbols=symbol,
+                feed=feed,
+                currency=currency
+            )
+            snapshot = self.data_client.get_stock_snapshot(params)
+            return snapshot['BILL']
+        except APIError as e:
+            raise Exception(e)
+
+    ############################
+    # Get Account Information
     ############################
     def get_account(self):
         '''
@@ -136,6 +155,22 @@ class AlpacaAPI:
             # Rename columns for consistency
             data_df.rename(columns={'symbol': 'Symbol', 'timestamp': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
             return data_df
+        # Handle APIError
+        except APIError as e:
+            raise Exception(e)
+
+    ############################
+    # Close Position on a single stock
+    ############################
+    def close_position(self, symbol):
+        '''
+        Close a position
+        :param symbol: str: stock symbol
+        :return: dict: close response
+        '''
+        try:
+            # Close position and return response from Alpaca API
+            return self.trade_client.close_position(symbol_or_asset_id=symbol)
         # Handle APIError
         except APIError as e:
             raise Exception(e)

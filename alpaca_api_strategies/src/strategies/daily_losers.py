@@ -1,10 +1,6 @@
 import os
 import time
-
 import csv
-
-from datetime import date
-from datetime import timedelta
 
 import pandas as pd
 from tqdm import tqdm
@@ -19,6 +15,12 @@ from ta.momentum import RSIIndicator
 
 from dotenv import load_dotenv
 load_dotenv()
+
+from datetime import datetime
+from datetime import timedelta
+from pytz import timezone
+
+tz = timezone('US/Eastern')
 
 class DailyLosers:
     """
@@ -175,7 +177,7 @@ class DailyLosers:
         if len(tickers) == 0:
             notional = 0
         else:
-            notional = float(available_cash) / int(len(tickers))
+            notional = float(available_cash) / int(len(tickers[:limit]))
             
         bought_positions = []
         # Iterate through the tickers and buy the stocks
@@ -306,7 +308,7 @@ class DailyLosers:
                 # Get the quantity of the stock to sell
                 qty = current_positions[current_positions['asset'] == symbol]['qty'].values[0]
                 if self.alpaca.market_open():
-                    self.alpaca.market_order(symbol=symbol, qty=qty, side='sell')
+                    self.alpaca.close_position(symbol=symbol)
             # If there is an error, print or send a slack message
             except Exception as e:
                 send_message(f"Error selling {symbol}: {e}")
@@ -365,8 +367,9 @@ class DailyLosers:
         there is no need to add the sentiment of the news articles
         :return: DataFrame: stock data
         """
-        today = date.today()
-        year_ago = date.today() - timedelta(days=365)
+        ctime = datetime.now(tz)
+        today = ctime.strftime("%Y-%m-%d")
+        year_ago = (ctime - timedelta(days=365)).strftime("%Y-%m-%d") 
 
         ticker_list = list(tickers.keys())
 
@@ -411,8 +414,6 @@ class DailyLosers:
         # If the list is empty, create an empty DataFrame
         else:
             df_tech = pd.DataFrame()
-
-        print(df_tech)
         # Return the DataFrame
         return df_tech
     
@@ -438,9 +439,10 @@ class DailyLosers:
             # Get the sentiment of the news articles for the stock
             for article in symbol['Articles']:
                 title = article['Title']
+                sym = symbol['Symbol']
                 article_text = article['Article']
                 # Get the sentiment of the news article using the OpenAI API
-                sentiment = openai.get_sentiment_analysis(title, article_text)
+                sentiment = openai.get_sentiment_analysis(title, sym, article_text)
                 sentiments.append(sentiment)
             # If the number of BULLISH sentiments is greater than the number of BEARISH and NEUTRAL sentiments, add the symbol to the buy_opportunities list
             if sentiments.count('BULLISH') > (sentiments.count('BEARISH') + sentiments.count('NEUTRAL')):
