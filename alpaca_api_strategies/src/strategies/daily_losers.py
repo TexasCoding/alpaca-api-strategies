@@ -16,12 +16,6 @@ from ta.momentum import RSIIndicator
 from dotenv import load_dotenv
 load_dotenv()
 
-from datetime import datetime
-from datetime import timedelta
-from pytz import timezone
-
-tz = timezone('US/Eastern')
-
 class DailyLosers:
     """
     The Daily Losers class
@@ -424,7 +418,7 @@ class DailyLosers:
                 df_tech.append(df_tech_temp)
             except KeyError:
                 pass
-            
+
         # If the list is not empty, concatenate the DataFrames
         if df_tech != []:
             df_tech = [x for x in df_tech if not x.empty]

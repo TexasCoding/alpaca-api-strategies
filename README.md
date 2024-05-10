@@ -10,6 +10,8 @@ The only service this project uses that cost any money is OpenAi API, but it is 
 
     I still have some functionality seperation to do in this strategy. Some comes from the Yahoo class when it may be better to reside in the DailyLoser class. But the strategy is functioning and working as intended. Starting and fresh $1000.00 Alpaca Paper account on 05/06/2024 to test for errors, functionality and profitability. Will post updates weekly on the project.
 
+    (UPDATE 05/10/2014): I have rewrote much of the code this week. Most things worked as intended. But there were a few errors that caused inconsistant trading. I have re-written much of the code, and remove alpaca-py as Alpaca API data source. I decided communicate with the api through my own classes. I will eventually package the new alpaca-api class into a package of it's own.
+
 ## Getting Started
 To get started with Alpaca API Strategies, follow these steps:
 
