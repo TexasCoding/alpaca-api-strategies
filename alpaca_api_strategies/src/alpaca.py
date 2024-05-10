@@ -1,21 +1,25 @@
 import os
 import pandas as pd
 import requests
+import json
 
 from datetime import datetime
 from datetime import timedelta
 from pytz import timezone
 
 tz = timezone('US/Eastern')
+ctime = datetime.now(tz)
+previous_day = (ctime - timedelta(days=1)).strftime("%Y-%m-%d")
+year_ago = (ctime - timedelta(days=365)).strftime("%Y-%m-%d")
 
 from alpaca.common.exceptions import APIError
 from alpaca.data import StockHistoricalDataClient
 from alpaca.trading.client import TradingClient
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest, ClosePositionRequest
-from alpaca.trading.enums import OrderSide, TimeInForce
+from alpaca.trading.enums import OrderSide, TimeInForce, AccountStatus
 from alpaca.data.enums import DataFeed
-from alpaca.data.requests import StockBarsRequest, StockSnapshotRequest
+from alpaca.data.requests import StockSnapshotRequest
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -25,37 +29,23 @@ class AlpacaAPI:
         self.api_key = os.getenv('APCA_API_KEY_ID')
         self.api_secret = os.getenv('APCA_API_SECRET_KEY')
         self.paper = os.getenv('APCA_PAPER')
-        self.trade_client = TradingClient(api_key=self.api_key, secret_key=self.api_secret, paper=self.paper)
-        self.data_client = StockHistoricalDataClient(api_key=self.api_key, secret_key=self.api_secret)
+        
+        if self.paper == 'True':
+            self.trade_url = 'https://paper-api.alpaca.markets/v2/'
+        else:
+            self.trade_url = 'https://api.alpaca.markets/v2/'
+            
+        self.stock_url = 'https://data.alpaca.markets/v2/stocks/'
+        self.crypto_url = 'https://data.alpaca.markets/v1beta3/'
 
-    ############################
-    # Get News Articles
-    ############################
-    def get_news_articles(self, symbol):
-        '''
-        THIS IS NOT A GREAT WAY TO GET NEWS ARTICLES
-        WORKING ON A BETTER WAY TO USE THE ALPACA API TO GET NEWS ARTICLES
-        THE ARTICLES ARE NOT VERY RELEVANT TO THE STOCK SYMBOL, IN MOST CASES
-        MAY BE ABLE TO FILTER THE ARTICLES BETTER, TO GET MORE RELEVANT ARTICLES
-        Get news articles for a stock symbol from Alpaca API
-        :param symbol: str: stock symbol
-        :return: dict: news articles
-        '''
-        ctime = datetime.now(tz)
-        today = ctime.strftime("%Y-%m-%d")
-        five_weeks_ago = (ctime - timedelta(weeks=5)).strftime("%Y-%m-%d")
-
-        url = f'https://data.alpaca.markets/v1beta1/news?start={five_weeks_ago}&end={today}&sort=desc&symbols={symbol}&include_content=true&exclude_contentless=true'
-
-        headers = {
+        self.headers = {
             'APCA-API-KEY-ID': self.api_key,
             'APCA-API-SECRET-KEY': self.api_secret,
             'accept': 'application/json'
         }
 
-        response = requests.get(url, headers=headers)
-
-        return response.json()
+        self.trade_client = TradingClient(api_key=self.api_key, secret_key=self.api_secret, paper=self.paper)
+        self.data_client = StockHistoricalDataClient(api_key=self.api_key, secret_key=self.api_secret)
 
     ############################
     # Get Stock Snapshot
@@ -84,7 +74,7 @@ class AlpacaAPI:
                 currency=currency
             )
             snapshot = self.data_client.get_stock_snapshot(params)
-            return snapshot['BILL']
+            return snapshot[symbol]
         except APIError as e:
             raise Exception(e)
 
@@ -93,71 +83,116 @@ class AlpacaAPI:
     ############################
     def get_account(self):
         '''
-        Get account information
+        Get account information from Alpaca API
         :return: dict: account information
-        '''
-        try:
-            account = self.trade_client.get_account()
-            return account
-        except APIError as e:
-            raise Exception(e)
-
+        dict keys: 'id', 'admin_configurations', 'user_configurations', 'account_number', 'status', 'crypto_status', 'options_approved_level', 'options_trading_level', 'currency'
+                   'buying_power', 'regt_buying_power', 'daytrading_buying_power', 'effective_buying_power', 'non_marginable_buying_power', 'options_buying_power', 'bod_dtbp', 'cash' 
+                   'accrued_fees', 'pending_transfer_in', 'portfolio_value', 'pattern_day_trader', 'trading_blocked', 'transfers_blocked', 'account_blocked', 'created_at' 
+                   'trade_suspended_by_user', 'multiplier', 'shorting_enabled', 'equity', 'last_equity', 'long_market_value', 'short_market_value', 'position_market_value', 'initial_margin'
+                    'maintenance_margin', 'last_maintenance_margin', 'sma', 'daytrade_count', 'balance_asof', 'crypto_tier', 'intraday_adjustments', 'pending_reg_taf_fees'
+        '''        
+        url = f'{self.trade_url}account'
+        
+        response = requests.get(url, headers=self.headers)
+        if response.status_code == 200:
+            res_dict = json.loads(response.text)
+            return dict(res_dict)
+        else:
+            raise Exception(response.text)
+    
     ############################
-    # Get Historical Stock Data
+    # Get Stock Historical Data
     ############################
-    def get_historical_data(self, symbols, start, end, timeframe='day'):
+    def get_stock_historical_data(self, symbol, start=year_ago, end=previous_day, timeframe='1d', currency='USD', limit=1000, adjustment='raw', feed='iex', sort='asc'):
         '''
-        Get historical data for a stock
+        Get historical stock data from Alpaca API
         :param symbol: str: stock symbol
-        :param start: str: start date in format 'YYYY-MM-DD'
-        :param end: str: end date in format 'YYYY-MM-DD'
-        :param timeframe: str: 'minute', 'hour', or 'day', default 'day'
+        :param start: str: start date in format 'YYYY-MM-DD', default one year ago
+        :param end: str: end date in format 'YYYY-MM-DD', default previous day
+        :param timeframe: str: '1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', or '1m', default '1d'
+        :param currency: str: 'usd' or 'cad', default 'usd'
+        :param limit: int: number of data points, default 1000
+        :param adjustment: str: 'raw' or 'split', default 'raw'
+        :param feed: str: 'iex' or 'sip', default 'iex'
+        :param sort: str: 'asc' or 'desc', default 'asc'
         :return: DataFrame: historical stock data
         '''
+        # URL for historical stock data request
+        url = f'{self.stock_url}bars'
         # Set timeframe
         match timeframe:
-            case 'minute':
-                timeframe = TimeFrame.Minute
-            case 'hour':
-                timeframe = TimeFrame.Hour
-            case 'day':
-                timeframe = TimeFrame.Day
-            case 'week':
-                timeframe = TimeFrame.Week
+            case '1m':
+                timeframe = '1Min'
+            case '5m':
+                timeframe = '5Min'
+            case '15m':
+                timeframe = '15Min'
+            case '30m':
+                timeframe = '30Min'
+            case '1h':
+                timeframe = '1Hour'
+            case '4h':
+                timeframe = '4Hour'
+            case '1d':
+                timeframe = '1Day'
+            case '1w':
+                timeframe = '1Week'
+            case '1m':
+                timeframe = '1Month'
             case _:
-                raise ValueError('Invalid timeframe. Must be "minute", "hour", "day" or "week"')
-        # Get historical data, handle APIError
-        try:
-            # Create StockBarsRequest object
-            bars = StockBarsRequest(
-                symbol_or_symbols=symbols,
-                start=start,
-                end=end,
-                timeframe=timeframe
-            )
-            # Get historical data and return as a DataFrame
-            data = self.data_client.get_stock_bars(bars)
+                raise ValueError('Invalid timeframe. Must be "1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", or "1m"')
 
-            data_df = data.df.reset_index()
+        # Parameters for historical stock data request
+        params = {
+            'symbols': symbol,
+            'timeframe': timeframe,
+            'start': start,
+            'end': end,
+            'currency': currency,
+            'limit': limit,
+            'adjustment': adjustment,
+            'feed': feed,
+            'sort': sort,
+        }
+        # Get historical stock data from Alpaca API
+        response = requests.get(url, headers=self.headers, params=params)
+        # Check if response is successful
+        if response.status_code != 200:
+            # Raise exception if response is not successful
+            raise Exception(response.text)
+        # Normalize JSON response and convert to DataFrame
+        bar_data_df = pd.json_normalize(json.loads(response.text)['bars'][symbol])
+        # Add symbol column to DataFrame
+        bar_data_df.insert(0, 'Symbol', symbol)
+        # Reformat date column
+        bar_data_df['t'] = pd.to_datetime(bar_data_df['t'].replace('[A-Za-z]', ' ', regex=True))
+        # Drop columns that are not needed
+        bar_data_df.drop(columns=['n', 'vw'], inplace=True)
+        # Rename columns for consistency
+        bar_data_df.rename(columns={'t': 'Date', 'o': 'Open', 'h': 'High', 'l': 'Low', 'c': 'Close', 'v': 'Volume'}, inplace=True)
+        # Convert columns to appropriate data types
+        bar_data_df = bar_data_df.astype({'Open': 'float', 'High': 'float', 'Low': 'float', 'Close': 'float', 'Volume': 'int', 'Symbol': 'str', 'Date': 'datetime64[ns]'})
+        # Return historical stock data as a DataFrame
+        return bar_data_df
 
-            #data_df = data_df.sort_values(by=['timestamp'], ascending=False)
-            
-            # Drop columns that are not needed
-            try:
-                data_df.drop(columns=['trade_count', 'vwap'], inplace=True)
-                # Reformat date column
-                data_df['timestamp'] = data_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                # # Convert date column to datetime
-                data_df['timestamp'] = pd.to_datetime(data_df['timestamp'])
-                
-            except KeyError:
-                pass
-            # Rename columns for consistency
-            data_df.rename(columns={'symbol': 'Symbol', 'timestamp': 'Date', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
-            return data_df
-        # Handle APIError
-        except APIError as e:
-            raise Exception(e)
+    ############################
+    # Get Stock Asset
+    ############################
+    def get_stock_asset(self, symbol):
+        '''
+        Get stock asset data from Alpaca API
+        :param symbol: str: stock symbol
+        :return: dict: stock asset data
+        :keys: 'id', 'class', 'exchange', 'symbol', 'name', 'status', 'tradable', 'marginable', 'shortable', 'easy_to_borrow', 'fractionable'
+        '''
+        url = f'{self.trade_url}assets/{symbol}'
+
+        response = requests.get(url, headers=self.headers)
+        if response.status_code == 200:
+            res_dict = json.loads(response.text)    
+            return dict(res_dict)
+        else:
+            raise Exception(response.text)
 
     ############################
     # Close Position on a single stock
@@ -263,21 +298,6 @@ class AlpacaAPI:
         # Handle APIError
         except APIError as e:
             raise Exception(e)
-
-    ############################
-    # Get Asset Data
-    ############################
-    def get_asset(self, symbol):
-        '''
-        Get asset data from Alpaca API
-        :param symbol: str: stock symbol
-        :return: dict: asset data
-        '''
-        try:
-            asset = self.trade_client.get_asset(symbol)
-            return asset
-        except APIError as e:
-            raise Exception(e)
         
     ############################
     # Check If Market Open
@@ -299,53 +319,37 @@ class AlpacaAPI:
     def get_current_positions(self):
         '''
         Get current positions from Alpaca API
-        :return: DataFrame: current positions, including cash
+        :return: DataFrame: current positions
         '''
-        positions = self.trade_client.get_all_positions()
-        # Create cash position
-        cash = pd.DataFrame({
-            'asset': 'Cash',
-            'current_price': self.trade_client.get_account().cash,
-            'qty': self.trade_client.get_account().cash,
-            'market_value': self.trade_client.get_account().cash,
-            'profit_dol': 0,
-            'profit_pct': 0
-        }, index=[0])
-        
-        if not positions:
-            assets = cash
-        else:
-            # Create DataFrame of investments
-            investments = pd.DataFrame({
-                'asset': [x.symbol for x in positions],
-                'current_price': [x.current_price for x in positions],
-                'qty': [x.qty for x in positions],
-                'market_value': [x.market_value for x in positions],
-                'profit_dol': [x.unrealized_pl for x in positions],
-                'profit_pct': [x.unrealized_plpc for x in positions]
-            })
-            # Concatenate investments and cash DataFrames
-            assets = pd.concat([investments, cash], ignore_index=True)
-            # Format DataFrames
-            float_format = ['current_price', 'qty', 'market_value', 'profit_dol', 'profit_pct']
-            string_format = ['asset']
+        # URL for current positions request
+        url = f'{self.trade_url}positions'
+        # Get current positions from Alpaca API
+        response = requests.get(url, headers=self.headers)
+        # Check if response is successful
+        if response.status_code != 200:
+            # Raise exception if response is not successful
+            raise Exception(response.text)
+        # Normalize JSON response and convert to DataFrame    
+        pos_data_df = pd.json_normalize(json.loads(response.text))
+        # Drop columns that are not needed
+        pos_data_df.drop(columns=['exchange', 'asset_class', 'asset_marginable', 'lastday_price', 'change_today', 'qty', 'asset_id', 'cost_basis', 'unrealized_intraday_pl', 'unrealized_intraday_plpc', 'avg_entry_price'], inplace=True)
+        # Set data types for DataFrame columns
+        pos_data_df = pos_data_df.astype({'symbol': 'str', 'side': 'str', 'market_value': 'float', 'unrealized_pl': 'float', 'unrealized_plpc': 'float', 'current_price': 'float', 'qty_available': 'float'})
+        # Rename columns for consistency
+        pos_data_df.rename(columns={'symbol': 'asset', 'unrealized_pl': 'profit_dol', 'unrealized_plpc': 'profit_pct', 'qty_available': 'qty'}, inplace=True)
+        # Calculate portfolio percentage
+        asset_sum = pos_data_df['market_value'].sum()
+        pos_data_df['portfolio_pct'] = pos_data_df['market_value'] / asset_sum
+        # Convert portfolio percentage to float
+        pos_data_df = pos_data_df.astype({'portfolio_pct': 'float'})
 
-            for col in float_format:
-                assets[col] = assets[col].astype(float)
-            for col in string_format:
-                assets[col] = assets[col].astype(str)
-
-            round_2 = ['market_value', 'profit_dol']
-            round_4 = ['profit_pct']
-
-            assets[round_2] = assets[round_2].apply(lambda x: pd.Series.round(x, 2))
-            assets[round_4] = assets[round_4].apply(lambda x: pd.Series.round(x, 4))
-
-            asset_sum = assets['market_value'].sum()
-            assets['portfolio_pct'] = assets['market_value'] / asset_sum
-
-        return assets
-
+        round_2 = ['market_value', 'profit_dol']
+        round_4 = ['profit_pct']
+        # Round columns to appropriate decimal places
+        pos_data_df[round_2] = pos_data_df[round_2].apply(lambda x: pd.Series.round(x, 2))
+        pos_data_df[round_4] = pos_data_df[round_4].apply(lambda x: pd.Series.round(x, 4))
+        # Return current positions as a DataFrame
+        return pos_data_df
 
 
     

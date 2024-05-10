@@ -56,6 +56,21 @@ class DailyLosers:
         # Buy the stocks based on the buy opportunities and openai sentiment
         self.buy_orders()
 
+    def tradeable_stock(self, symbol):
+        '''
+        Get stock asset data from Alpaca API and return True if stock is tradeable and fractionable and active and not OTC and not empty response
+        :param symbol: str: stock symbol
+        :return: bool: True if stock is tradeable and fractionable and active and not OTC and not empty response
+        '''
+        asset = self.alpaca.get_stock_asset(symbol)
+
+        otc = asset['exchange'] == 'OTC'
+        tradeable = asset['tradable']
+        fractionable = asset['fractionable']
+        active = asset['status'] == 'active'
+        return False if not tradeable or not fractionable or not active or asset=={} or otc else True
+
+        
     #######################################################
     # Define the save_previous_day_losers function
     #######################################################
@@ -66,17 +81,18 @@ class DailyLosers:
         scraped_symbols         = self.yahoo.yahoo_scrape_symbols(yahoo_url='https://finance.yahoo.com/losers?offset=0&count=100', asset_type='stock', top=100)
         # Check if the asset is fractionable and tradable
         for ticker in scraped_symbols:
-            if '-' in ticker:
-                scraped_symbols.remove(ticker)
-                continue
-            asset = self.alpaca.get_asset(ticker)
-            if not asset.fractionable or not asset.tradable:
+            asset = self.tradeable_stock(ticker)
+            if not asset:
                 scraped_symbols.remove(ticker)
                 continue
         # Save the scraped symbols to a CSV file
         with open('alpaca_api_strategies/src/strategies/previous_day_losers.csv', 'w') as f:
             writer = csv.writer(f)
             for symbol in scraped_symbols:
+                asset = self.tradeable_stock(symbol)
+                if not asset:
+                    scraped_symbols.remove(symbol)
+                    continue
                 writer.writerow([symbol])
 
         print("Saved {} previous day losers to CSV file".format(len(scraped_symbols)))
@@ -106,6 +122,8 @@ class DailyLosers:
         """
         # Get the scraped symbols from the Yahoo Finance
         scraped_symbols         = self.get_previous_day_losers()
+        # Check if the asset is fractionable and tradable
+
         # Get the tickers from the Yahoo API, using the scraped symbols from Yahoo Finance
         tickers         = self.yahoo.get_tickers(scraped_symbols)
         # Get the ticker data from the Yahoo API
@@ -172,12 +190,12 @@ class DailyLosers:
         tickers = self.get_buy_opportunities()
         # Get the current positions and available cash
         df_current_positions = self.alpaca.get_current_positions()
-        available_cash = df_current_positions[df_current_positions['asset'] == 'Cash']['qty'].values[0]
+        available_cash = float(self.alpaca.get_account()['cash'])
         # This is the amount to buy for each stock
         if len(tickers) == 0:
             notional = 0
         else:
-            notional = float(available_cash) / int(len(tickers[:limit]))
+            notional = available_cash / len(tickers[:limit])
             
         bought_positions = []
         # Iterate through the tickers and buy the stocks
@@ -235,27 +253,25 @@ class DailyLosers:
         print("Liquidating positions for capital to make cash 10% of the portfolio")
         # Get the current positions from the Alpaca API
         current_positions = self.alpaca.get_current_positions()
-        # Get the cash row from the current positions
-        cash_row        = current_positions[current_positions['asset'] == 'Cash']
-        # Get the total holdings from the current positions and cash row
-        total_holdings  = current_positions['market_value'].sum()
+        # Get the cash available from the Alpaca API
+        cash_available = float(self.alpaca.get_account()['cash'])
+        # Get the total holdings from the current positions and cash available
+        total_holdings  = float(current_positions['market_value'].sum() + cash_available)
 
         sold_positions = []
         # If the cash is less than 10% of the total holdings, liquidate the top 25% of performing stocks to make cash 10% of the portfolio
-        if float(cash_row['market_value'].values[0]) / float(total_holdings) < 0.1:
-            # Remove the cash row
-            curpositions = current_positions[current_positions['asset'] != 'Cash']
+        if cash_available / total_holdings < 0.1:
             # Sort the positions by profit percentage
-            curpositions = curpositions.sort_values(by='profit_pct', ascending=False) 
+            current_positions = current_positions.sort_values(by='profit_pct', ascending=False) 
             # Sell the top 25% of performing stocks evenly to make cash 10% of total portfolio
-            top_performers              = curpositions.iloc[:int(len(curpositions) // 2)]
+            top_performers              = current_positions.iloc[:int(len(current_positions) // 2)]
             top_performers_market_value = top_performers['market_value'].sum()
-            cash_needed                 = total_holdings * 0.1 - cash_row['market_value'].values[0]
+            cash_needed                 = total_holdings * 0.1 - cash_available
             # Sell the top performers to make cash 10% of the portfolio
             for index, row in top_performers.iterrows():
                 print(f"Selling {row['asset']} to make cash 10% portfolio cash requirement")
                 # Calculate the amount to sell in USD
-                amount_to_sell = int((row['market_value'] / top_performers_market_value) * cash_needed)
+                amount_to_sell = float((row['market_value'] / top_performers_market_value) * cash_needed)
                 # If the amount to sell is 0, continue to the next stock
                 if amount_to_sell == 0:
                     continue
@@ -281,7 +297,7 @@ class DailyLosers:
             # Pretend trades if the market is closed
             sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market_open() else "")
             for position in sold_positions:
-                sold_message += "{qty} shares of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
+                sold_message += "Sold ${qty} of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
         # Print or send the message
         send_message(sold_message)
 
@@ -340,7 +356,7 @@ class DailyLosers:
         # Get the current positions from the Alpaca API
         current_positions = self.alpaca.get_current_positions()
         # Get the symbols from the current positions that are not cash
-        current_positions_symbols   = current_positions[current_positions['asset'] != 'Cash']['asset'].tolist()
+        current_positions_symbols   = current_positions['asset'].tolist()
         # Get the Yahoo tickers from the symbols
         yahoo_tickers               = self.yahoo.get_tickers(current_positions_symbols)
         # Get the assets history from the Yahoo API
@@ -381,7 +397,7 @@ class DailyLosers:
             + str(len(ticker_list))
             + " symbols from Alpaca API",
         ):
-            history = self.alpaca.get_historical_data(symbols=ticker, start=year_ago, end=today, timeframe='day') 
+            history = self.alpaca.get_stock_historical_data(symbol=ticker, start=year_ago, end=today, timeframe='1d') 
             # If the history is empty, continue to the next stock
             if history.empty:
                 del tickers[ticker]
