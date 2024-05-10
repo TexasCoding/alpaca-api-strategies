@@ -7,7 +7,6 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "3.12.3"
-alpaca-py = "^0.21.0"
 requests = "^2.31.0"
 python-dotenv = "^1.0.1"
 yfinance = "^0.2.38"
