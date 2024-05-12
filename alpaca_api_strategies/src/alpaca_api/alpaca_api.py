@@ -292,9 +292,11 @@ class AlpacaAPI:
             return pos_data_df
         
         # Drop columns that are not needed
-        pos_data_df.drop(columns=['exchange', 'asset_class', 'asset_marginable', 'lastday_price', 'change_today', 'qty', 'asset_id', 'cost_basis', 'unrealized_intraday_pl', 'unrealized_intraday_plpc', 'avg_entry_price'], inplace=True)
+        pos_data_df.drop(columns=['exchange', 'asset_class', 'asset_marginable', 'lastday_price', 'change_today', 'qty', 'asset_id', \
+                                  'cost_basis', 'unrealized_intraday_pl', 'unrealized_intraday_plpc', 'avg_entry_price'], inplace=True)
         # Set data types for DataFrame columns
-        pos_data_df = pos_data_df.astype({'symbol': 'str', 'side': 'str', 'market_value': 'float', 'unrealized_pl': 'float', 'unrealized_plpc': 'float', 'current_price': 'float', 'qty_available': 'float'})
+        pos_data_df = pos_data_df.astype({'symbol': 'str', 'side': 'str', 'market_value': 'float', 'unrealized_pl': 'float', 'unrealized_plpc': 'float', \
+                                          'current_price': 'float', 'qty_available': 'float'})
         # Rename columns for consistency
         pos_data_df.rename(columns={'symbol': 'asset', 'unrealized_pl': 'profit_dol', 'unrealized_plpc': 'profit_pct', 'qty_available': 'qty'}, inplace=True)
         # Calculate portfolio percentage

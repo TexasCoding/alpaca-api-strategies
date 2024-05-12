@@ -10,11 +10,17 @@ from src.alpaca_api.alpaca_api import AlpacaAPI
 from src.yahoo import Yahoo
 from src.openai import OpenAIAPI
 
+from py_alpaca_api.alpaca import PyAlpacaApi
+
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 
 from dotenv import load_dotenv
 load_dotenv()
+
+api_key=str(os.getenv('APCA_API_KEY_ID'))
+api_secret=str(os.getenv('APCA_API_SECRET_KEY'))
+api_paper=bool(os.getenv('APCA_PAPER'))
 
 class DailyLosers:
     """
@@ -28,6 +34,8 @@ class DailyLosers:
         self.alpaca = AlpacaAPI()
         # self.slack = Slack()
         self.production = os.getenv('PRODUCTION')
+
+        self.alpaca_api = PyAlpacaApi(api_key=api_key, api_secret=api_secret, api_paper=api_paper)
         # self.slack_username = os.getenv('SLACK_USERNAME')
     
     #######################################################
