@@ -1,4 +1,5 @@
 import os
+from re import T
 import time
 import csv
 
@@ -42,7 +43,7 @@ class DailyLosers:
         # Initialize the Alpaca API
         self.alpaca = PyAlpacaApi(api_key=api_key, api_secret=api_secret, api_paper=api_paper)
         # self.slack = Slack()
-        self.production = bool(os.getenv('PRODUCTION'))
+        self.production = True if os.getenv('PRODUCTION') == 'True' else False
     
     #######################################################
     #Define the run function
@@ -203,7 +204,7 @@ class DailyLosers:
         if len(tickers) == 0:
             notional = 0
         else:
-            notional = available_cash / len(tickers[:limit])
+            notional = (available_cash / len(tickers[:limit])) - 1
             
         bought_positions = []
         # Iterate through the tickers and buy the stocks
@@ -269,18 +270,19 @@ class DailyLosers:
         # Get the cash available from the Alpaca API
         #cash_available = float(self.alpaca.get_account().cash)
         cash_row = current_positions[current_positions['symbol'] == 'Cash']
+   
         # Get the total holdings from the current positions and cash available
         total_holdings  = current_positions['market_value'].sum()
 
         sold_positions = []
         # If the cash is less than 10% of the total holdings, liquidate the top 25% of performing stocks to make cash 10% of the portfolio
-        if cash_row['market_value'] / total_holdings < 0.1:
+        if cash_row['market_value'][0] / total_holdings < 0.1:
             # Sort the positions by profit percentage
             current_positions = current_positions.sort_values(by='profit_pct', ascending=False) 
             # Sell the top 25% of performing stocks evenly to make cash 10% of total portfolio
             top_performers              = current_positions.iloc[:int(len(current_positions) // 2)]
             top_performers_market_value = top_performers['market_value'].sum()
-            cash_needed                 = total_holdings * 0.1 - cash_row['market_value'].values[0]
+            cash_needed                 = total_holdings * 0.1 - cash_row['market_value'][0]
 
             # Sell the top performers to make cash 10% of the portfolio
             for index, row in top_performers.iterrows():
@@ -371,7 +373,7 @@ class DailyLosers:
         """
         # Get the current positions from the Alpaca API
         current_positions = self.alpaca.get_positions()
-        if current_positions.empty:
+        if current_positions[current_positions['symbol'] != 'Cash'].empty:
             return []
         # Get the symbols from the current positions that are not cash
         current_positions_symbols   = current_positions[current_positions['symbol'] != 'Cash']['symbol'].tolist()
