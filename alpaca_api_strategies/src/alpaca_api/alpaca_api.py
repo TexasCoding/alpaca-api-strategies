@@ -1,6 +1,4 @@
-from math import e
 import os
-from re import M
 import pandas as pd
 import requests
 import json

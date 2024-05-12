@@ -1112,13 +1112,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.28.0"
+version = "1.28.1"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.28.0-py3-none-any.whl", hash = "sha256:94b5a99f5121e1747dda1bb8fff31820d5ab4b49056a9cf2e3605f5c90011955"},
-    {file = "openai-1.28.0.tar.gz", hash = "sha256:ac43b8b48aec70de4b76cfc96ae906bf8d5814427475b9dabb662f84f655f0e1"},
+    {file = "openai-1.28.1-py3-none-any.whl", hash = "sha256:943e0d0d587b9a62f99bd3acbaf479ae5362986e5fff013f57b5b7bde85cce93"},
+    {file = "openai-1.28.1.tar.gz", hash = "sha256:8a3adbba16882434768d76fd3129fcc9b40ace98f8d55a6ddacfc05c4096ac30"},
 ]
 
 [package.dependencies]
@@ -1341,18 +1341,18 @@ files = [
 
 [[package]]
 name = "poetry-plugin-export"
-version = "1.7.1"
+version = "1.8.0"
 description = "Poetry plugin to export the dependencies to various formats"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "poetry_plugin_export-1.7.1-py3-none-any.whl", hash = "sha256:b2258e53ae0d369a73806f957ed0e726eb95c571a0ce8b1f273da686528cc1da"},
-    {file = "poetry_plugin_export-1.7.1.tar.gz", hash = "sha256:cf62cfb6218a904290ba6db3bc1a24aa076d10f81c48c6e48b2ded430131e22e"},
+    {file = "poetry_plugin_export-1.8.0-py3-none-any.whl", hash = "sha256:adbe232cfa0cc04991ea3680c865cf748bff27593b9abcb1f35fb50ed7ba2c22"},
+    {file = "poetry_plugin_export-1.8.0.tar.gz", hash = "sha256:1fa6168a85d59395d835ca564bc19862a7c76061e60c3e7dfaec70d50937fc61"},
 ]
 
 [package.dependencies]
-poetry = ">=1.8.0,<2.0.0"
-poetry-core = ">=1.7.0,<2.0.0"
+poetry = ">=1.8.0,<3.0.0"
+poetry-core = ">=1.7.0,<3.0.0"
 
 [[package]]
 name = "ptyprocess"
@@ -1367,13 +1367,13 @@ files = [
 
 [[package]]
 name = "py-alpaca-api"
-version = "0.2.2"
+version = "0.2.7"
 description = "Python package, for communicating with Alpaca Markets REST API."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_api-0.2.2-py3-none-any.whl", hash = "sha256:d0983fe53a50e805ff595283e8a3b320f863d9c6fd6e2e0e137fa1e0af22c70b"},
-    {file = "py_alpaca_api-0.2.2.tar.gz", hash = "sha256:e87588aa10495ca5c6249fd8ef8491fa5a73751776634afd968227762e198a1b"},
+    {file = "py_alpaca_api-0.2.7-py3-none-any.whl", hash = "sha256:58ab7b38f3e36bd65ec0fd6e9d5c032657f765ce4189c9b9a09d51376a7d2ff7"},
+    {file = "py_alpaca_api-0.2.7.tar.gz", hash = "sha256:ac31b1c8cb161585435aab944b02ce8829357eb5014c60a31ad4b00f56a8ead1"},
 ]
 
 [package.dependencies]
@@ -2264,4 +2264,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.3"
-content-hash = "75ebef58e417a2ca4bca8bcecd33b5f6bd3b8e1c2b4e5a04823d71d0fd2245df"
+content-hash = "ab6b93b027fa8a7cf150b4129543cff43387bc5c6537363b68828f91d24804f7"

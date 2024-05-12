@@ -6,7 +6,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from src.global_functions import *
-from src.alpaca_api.alpaca_api import AlpacaAPI
 from src.yahoo import Yahoo
 from src.openai import OpenAIAPI
 
@@ -14,6 +13,16 @@ from py_alpaca_api.alpaca import PyAlpacaApi
 
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
+
+
+from datetime import datetime
+from datetime import timedelta
+from pytz import timezone
+
+tz = timezone('US/Eastern')
+ctime = datetime.now(tz)
+previous_day = (ctime - timedelta(days=1)).strftime("%Y-%m-%d")
+year_ago = (ctime - timedelta(days=365)).strftime("%Y-%m-%d")
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,12 +40,9 @@ class DailyLosers:
     def __init__(self):
         self.yahoo = Yahoo()
         # Initialize the Alpaca API
-        self.alpaca = AlpacaAPI()
+        self.alpaca = PyAlpacaApi(api_key=api_key, api_secret=api_secret, api_paper=api_paper)
         # self.slack = Slack()
-        self.production = os.getenv('PRODUCTION')
-
-        self.alpaca_api = PyAlpacaApi(api_key=api_key, api_secret=api_secret, api_paper=api_paper)
-        # self.slack_username = os.getenv('SLACK_USERNAME')
+        self.production = bool(os.getenv('PRODUCTION'))
     
     #######################################################
     #Define the run function
@@ -48,7 +54,7 @@ class DailyLosers:
         Should only be run at market open
         """
         # Sleep for 60 seconds to make sure the market is open
-        if self.production == 'True':
+        if self.production == True:
             print("Sleeping for 60 seconds to make sure the market is open")
             time.sleep(60)
         # Check for sell opportunities from the criteria
@@ -126,7 +132,7 @@ class DailyLosers:
         return: List of buy opportunities
         """
         # Get the scraped symbols from the Yahoo Finance
-        scraped_symbols         = self.get_previous_day_losers()
+        scraped_symbols = self.get_previous_day_losers()
         # Get the tickers from the Yahoo API, using the scraped symbols from Yahoo Finance
         tickers         = self.yahoo.get_tickers(scraped_symbols)
         # Get the ticker data from the Yahoo API
@@ -192,19 +198,19 @@ class DailyLosers:
         # Get the tickers from the get_ticker_info function and convert symbols to a list
         tickers = self.get_buy_opportunities()
         # Get the available cash from the Alpaca API
-        available_cash = float(self.alpaca.get_account().cash)
+        available_cash = self.alpaca.get_account().cash
         # This is the amount to buy for each stock
         if len(tickers) == 0:
             notional = 0
         else:
-            notional = (available_cash / len(tickers[:limit])) - 1.00
+            notional = available_cash / len(tickers[:limit])
             
         bought_positions = []
         # Iterate through the tickers and buy the stocks
         for ticker in tickers[:limit]:
             # Market buy the stock
             try:
-                if self.alpaca.market_status().is_open:
+                if self.alpaca.market_clock().is_open:
                     #print(f"Buying {ticker} with notional amount of {notional}")
                     self.alpaca.market_order(symbol=ticker, notional=notional)
             # If there is an error, print or send a slack message
@@ -219,7 +225,7 @@ class DailyLosers:
             bought_message = "No positions bought"
         else:
             # If positions were bought, create the message
-            bought_message = "Successfully{} bought the following positions:\n".format(" pretend" if not self.alpaca.market_status().is_open else "")
+            bought_message = "Successfully{} bought the following positions:\n".format(" pretend" if not self.alpaca.market_clock().is_open else "")
             for position in bought_positions:
                 bought_message += "${qty} of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
         # Print or send the message
@@ -255,25 +261,26 @@ class DailyLosers:
         """
         print("Liquidating positions for capital to make cash 10% of the portfolio")
         # Get the current positions from the Alpaca API
-        current_positions = self.alpaca.get_current_positions()
+        current_positions = self.alpaca.get_positions()
         if current_positions.empty:
             sold_message = "No positions available to liquidate for capital"
             send_message(sold_message)
             return
         # Get the cash available from the Alpaca API
-        cash_available = float(self.alpaca.get_account().cash)
+        #cash_available = float(self.alpaca.get_account().cash)
+        cash_row = current_positions[current_positions['symbol'] == 'Cash']
         # Get the total holdings from the current positions and cash available
-        total_holdings  = float(current_positions['market_value'].sum() + cash_available)
+        total_holdings  = current_positions['market_value'].sum()
 
         sold_positions = []
         # If the cash is less than 10% of the total holdings, liquidate the top 25% of performing stocks to make cash 10% of the portfolio
-        if cash_available / total_holdings < 0.1:
+        if cash_row['market_value'] / total_holdings < 0.1:
             # Sort the positions by profit percentage
             current_positions = current_positions.sort_values(by='profit_pct', ascending=False) 
             # Sell the top 25% of performing stocks evenly to make cash 10% of total portfolio
             top_performers              = current_positions.iloc[:int(len(current_positions) // 2)]
             top_performers_market_value = top_performers['market_value'].sum()
-            cash_needed                 = (total_holdings * 0.1 - cash_available) + 1.00
+            cash_needed                 = total_holdings * 0.1 - cash_row['market_value'].values[0]
 
             # Sell the top performers to make cash 10% of the portfolio
             for index, row in top_performers.iterrows():
@@ -288,7 +295,7 @@ class DailyLosers:
                 # Market sell the stock
                 try:
                     # Market sell the stock if the market is open
-                    if self.alpaca.market_status().is_open:
+                    if self.alpaca.market_clock().is_open:
                         self.alpaca.market_order(symbol=row['asset'], notional=amount_to_sell, side='sell')
                 # If there is an error, print or send a slack message
                 except Exception as e:
@@ -304,7 +311,7 @@ class DailyLosers:
         else:
             # If positions were sold, create the message
             # Pretend trades if the market is closed
-            sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market_status().is_open else "")
+            sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market_clock().is_open else "")
             for position in sold_positions:
                 sold_message += "Sold ${qty} of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
         # Print or send the message
@@ -324,7 +331,7 @@ class DailyLosers:
         # Get the sell opportunities
         sell_opportunities = self.get_sell_opportunities()
         # Get the current positions
-        current_positions = self.alpaca.get_current_positions()
+        current_positions = self.alpaca.get_positions()
         sold_positions = [] 
         # Iterate through the sell opportunities and sell the stocks
         for symbol in sell_opportunities:
@@ -332,7 +339,7 @@ class DailyLosers:
             try:
                 # Get the quantity of the stock to sell
                 qty = current_positions[current_positions['asset'] == symbol]['qty'].values[0]
-                if self.alpaca.market_status().is_open:
+                if self.alpaca.market_clock().is_open:
                     self.alpaca.market_order(symbol=symbol, qty=qty, side='sell')
             # If there is an error, print or send a slack message
             except Exception as e:
@@ -348,7 +355,7 @@ class DailyLosers:
             sold_message = "No positions to sell"
         else:
             # If positions were sold, create the message
-            sold_message = "Successfully{} sold the following positions:\n".format(" pretend" if not self.alpaca.market_status().is_open else "")
+            sold_message = "Successfully{} sold the following positions:\n".format(" pretend" if not self.alpaca.market_clock().is_open else "")
             for position in sold_positions:
                 sold_message += "{qty} shares of {symbol}\n".format(qty=position['qty'], symbol=position['symbol'])
         # Print or send the message
@@ -363,11 +370,11 @@ class DailyLosers:
         return: List of sell opportunities
         """
         # Get the current positions from the Alpaca API
-        current_positions = self.alpaca.get_current_positions()
+        current_positions = self.alpaca.get_positions()
         if current_positions.empty:
             return []
         # Get the symbols from the current positions that are not cash
-        current_positions_symbols   = current_positions['asset'].tolist()
+        current_positions_symbols   = current_positions[current_positions['symbol'] != 'Cash']['symbol'].tolist()
         # Get the Yahoo tickers from the symbols
         yahoo_tickers               = self.yahoo.get_tickers(current_positions_symbols)
         # Get the assets history from the Yahoo API
@@ -401,7 +408,7 @@ class DailyLosers:
             + " symbols from Alpaca API",
         ):
             try:
-                history = self.alpaca.get_stock_historical_data(symbol=ticker) 
+                history = self.alpaca.get_stock_historical_data(symbol=ticker, start=year_ago, end=previous_day) 
             except Exception:
                 del tickers[ticker]
                 continue
