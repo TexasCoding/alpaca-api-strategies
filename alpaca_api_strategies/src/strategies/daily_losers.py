@@ -278,7 +278,7 @@ class DailyLosers:
         # If the cash is less than 10% of the total holdings, liquidate the top 25% of performing stocks to make cash 10% of the portfolio
         if cash_row['market_value'][0] / total_holdings < 0.1:
             # Sort the positions by profit percentage
-            current_positions = current_positions.sort_values(by='profit_pct', ascending=False) 
+            current_positions = current_positions[current_positions['symbol'] != 'Cash'].sort_values(by='profit_pct', ascending=False) 
             # Sell the top 25% of performing stocks evenly to make cash 10% of total portfolio
             top_performers              = current_positions.iloc[:int(len(current_positions) // 2)]
             top_performers_market_value = top_performers['market_value'].sum()
@@ -286,7 +286,7 @@ class DailyLosers:
 
             # Sell the top performers to make cash 10% of the portfolio
             for index, row in top_performers.iterrows():
-                print(f"Selling {row['asset']} to make cash 10% portfolio cash requirement")
+                print(f"Selling {row['symbol']} to make cash 10% portfolio cash requirement")
                 # Calculate the quantity to sell from the top performers
                 #amount_to_sell = float((row['market_value'] / top_performers_market_value) * cash_needed)
                 amount_to_sell = int((row['market_value'] / top_performers_market_value) * cash_needed)
@@ -298,14 +298,14 @@ class DailyLosers:
                 try:
                     # Market sell the stock if the market is open
                     if self.alpaca.market_clock().is_open:
-                        self.alpaca.market_order(symbol=row['asset'], notional=amount_to_sell, side='sell')
+                        self.alpaca.market_order(symbol=row['symbol'], notional=amount_to_sell, side='sell')
                 # If there is an error, print or send a slack message
                 except Exception as e:
                         send_message(f"Error selling {row['asset']}: {e}")
                         continue
                 # If the order was successful, append the sold position to the sold_positions list
                 else:
-                    sold_positions.append({'symbol': row['asset'], 'notional': round(amount_to_sell, 2)})
+                    sold_positions.append({'symbol': row['symbol'], 'notional': round(amount_to_sell, 2)})
         # Print or send slack messages of the sold positions
         if not sold_positions:
             # If no positions were sold, create the message
@@ -340,7 +340,7 @@ class DailyLosers:
             # Try to sell the stock
             try:
                 # Get the quantity of the stock to sell
-                qty = current_positions[current_positions['asset'] == symbol]['qty'].values[0]
+                qty = current_positions[current_positions['symbol'] == symbol]['qty'].values[0]
                 if self.alpaca.market_clock().is_open:
                     self.alpaca.market_order(symbol=symbol, qty=qty, side='sell')
             # If there is an error, print or send a slack message
