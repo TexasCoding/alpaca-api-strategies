@@ -301,7 +301,7 @@ class DailyLosers:
                         self.alpaca.market_order(symbol=row['symbol'], notional=amount_to_sell, side='sell')
                 # If there is an error, print or send a slack message
                 except Exception as e:
-                        send_message(f"Error selling {row['asset']}: {e}")
+                        send_message(f"Error selling {row['symbol']}: {e}")
                         continue
                 # If the order was successful, append the sold position to the sold_positions list
                 else:
