@@ -9,9 +9,6 @@ from requests_cache import CacheMixin, SQLiteCache
 from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
 from pyrate_limiter import Duration, RequestRate, Limiter
 
-from ta.volatility import BollingerBands
-from ta.momentum import RSIIndicator
-
 from requests_html import HTMLSession
 
 from tqdm import tqdm
