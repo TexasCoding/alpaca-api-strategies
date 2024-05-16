@@ -226,7 +226,7 @@ class DailyLosers:
             bought_message = "No positions bought"
         else:
             # If positions were bought, create the message
-            bought_message = "Successfully{} bought the following positions:\n".format(" pretend" if not self.alpaca.market.clock.is_open else "")
+            bought_message = "Successfully{} bought the following positions:\n".format(" pretend" if not self.alpaca.market.clock().is_open else "")
             for position in bought_positions:
                 bought_message += "${qty} of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
         # Print or send the message
@@ -297,7 +297,7 @@ class DailyLosers:
                 # Market sell the stock
                 try:
                     # Market sell the stock if the market is open
-                    if self.alpaca.market.clock.is_open:
+                    if self.alpaca.market.clock().is_open:
                         self.alpaca.order.market(symbol=row['symbol'], notional=amount_to_sell, side='sell')
                 # If there is an error, print or send a slack message
                 except Exception as e:
@@ -313,7 +313,7 @@ class DailyLosers:
         else:
             # If positions were sold, create the message
             # Pretend trades if the market is closed
-            sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market.clock.is_open else "")
+            sold_message = "Successfully{} liquidated the following positions:\n".format(" pretend" if not self.alpaca.market.clock().is_open else "")
             for position in sold_positions:
                 sold_message += "Sold ${qty} of {symbol}\n".format(qty=position['notional'], symbol=position['symbol'])
         # Print or send the message
@@ -341,7 +341,7 @@ class DailyLosers:
             try:
                 # Get the quantity of the stock to sell
                 qty = current_positions[current_positions['symbol'] == symbol]['qty'].values[0]
-                if self.alpaca.market.clock.is_open:
+                if self.alpaca.market.clock().is_open:
                     self.alpaca.order.market(symbol=symbol, qty=qty, side='sell')
             # If there is an error, print or send a slack message
             except Exception as e:
@@ -357,7 +357,7 @@ class DailyLosers:
             sold_message = "No positions to sell"
         else:
             # If positions were sold, create the message
-            sold_message = "Successfully{} sold the following positions:\n".format(" pretend" if not self.alpaca.market.clock.is_open else "")
+            sold_message = "Successfully{} sold the following positions:\n".format(" pretend" if not self.alpaca.market.clock().is_open else "")
             for position in sold_positions:
                 sold_message += "{qty} shares of {symbol}\n".format(qty=position['qty'], symbol=position['symbol'])
         # Print or send the message

@@ -12,7 +12,10 @@ from pyrate_limiter import Duration, RequestRate, Limiter
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 
-from requests_html import HTMLSession
+# from requests_html import HTMLSession
+
+import requests
+from bs4 import BeautifulSoup as bs
 
 from tqdm import tqdm
 
@@ -98,11 +101,13 @@ class Yahoo:
             # Get the news articles for the stock from Yahoo Finance, and add the article text to the list
             # Throttle the requests to 1 request per second to avoid getting blocked
             for article in yahoo_news['Articles']:
-                session = HTMLSession()
-                response = session.get(article['Link'])
-                article_text = response.html.find('.caas-body', first=True).text
+
+                request = requests.get(article['Link'])
+                soup = bs(request.content, 'lxml')
+                article_text = soup.find('div', class_='caas-body').get_text(separator=' ', strip=True) # type: ignore
+                
                 articles_text.append({'Title': article['Title'], 'Symbol': yahoo_news['Symbol'], 'Article': article_text})
-                session.close()
+                #session.close()
                 time.sleep(1)
             # Add the stock symbol and the news articles to the list
             scraped_articles.append({'Symbol': yahoo_news['Symbol'], 'Articles': articles_text})
@@ -136,14 +141,19 @@ class Yahoo:
         return: DataFrame with the raw information
         """
         # Create a HTMLSession object
-        session = HTMLSession()
-        response = session.get(site)
-        # Get the tables from the site
-        tables = pd.read_html(response.html.raw_html)
+        # session = HTMLSession()
+        # response = session.get(site)
+        request = requests.get("https://finance.yahoo.com/losers?offset=0&count=100")
+        soup = bs(request.content, 'html.parser')
+        tables = pd.read_html(soup.prettify())
         df = tables[0].copy()
         df.columns = tables[0].columns
+        # Get the tables from the site
+        # tables = pd.read_html(response.html.raw_html)
+        # df = tables[0].copy()
+        # df.columns = tables[0].columns
         # Close the session
-        session.close()
+        #session.close()
         return df
 
     ########################################################

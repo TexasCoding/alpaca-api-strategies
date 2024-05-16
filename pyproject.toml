@@ -19,6 +19,7 @@ openai = "^1.25.1"
 slack-sdk = "^3.27.1"
 poetry-plugin-export = "^1.7.1"
 py-alpaca-api = "^0.4.0"
+beautifulsoup4 = "^4.12.3"
 
 
 [tool.poetry.group.dev.dependencies]
