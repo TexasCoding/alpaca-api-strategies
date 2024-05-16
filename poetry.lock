@@ -1096,13 +1096,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.29.0"
+version = "1.30.1"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.29.0-py3-none-any.whl", hash = "sha256:c61cd12376c84362d406341f9e2f9a9d6b81c082b133b44484dc0f43954496b1"},
-    {file = "openai-1.29.0.tar.gz", hash = "sha256:d5a769f485610cff8bae14343fa45a8b1d346be3d541fa5b28ccd040dbc8baf8"},
+    {file = "openai-1.30.1-py3-none-any.whl", hash = "sha256:c9fb3c3545c118bbce8deb824397b9433a66d0d0ede6a96f7009c95b76de4a46"},
+    {file = "openai-1.30.1.tar.gz", hash = "sha256:4f85190e577cba0b066e1950b8eb9b11d25bc7ebcc43a86b326ce1bfa564ec74"},
 ]
 
 [package.dependencies]
@@ -1248,13 +1248,13 @@ testing = ["pytest", "pytest-cov", "wheel"]
 
 [[package]]
 name = "platformdirs"
-version = "4.2.1"
+version = "4.2.2"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "platformdirs-4.2.1-py3-none-any.whl", hash = "sha256:17d5a1161b3fd67b390023cb2d3b026bbd40abde6fdb052dfbd3a29c3ba22ee1"},
-    {file = "platformdirs-4.2.1.tar.gz", hash = "sha256:031cd18d4ec63ec53e82dceaac0417d218a6863f7745dfcc9efe7793b7039bdf"},
+    {file = "platformdirs-4.2.2-py3-none-any.whl", hash = "sha256:2d7a1657e36a80ea911db832a8a6ece5ee53d8de21edd5cc5879af6530b1bfee"},
+    {file = "platformdirs-4.2.2.tar.gz", hash = "sha256:38b7b51f512eed9e84a22788b4bce1de17c0adb134d6becb09836e37d8654cd3"},
 ]
 
 [package.extras]
@@ -1351,13 +1351,13 @@ files = [
 
 [[package]]
 name = "py-alpaca-api"
-version = "0.3.0"
+version = "0.4.0"
 description = "Python package, for communicating with Alpaca Markets REST API."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_api-0.3.0-py3-none-any.whl", hash = "sha256:fb8861b23f5ee399f194fc76bb17e56de89096a0a5c4d3b5f3e3ac19726be70c"},
-    {file = "py_alpaca_api-0.3.0.tar.gz", hash = "sha256:5e2327fc8f255441a895e9425131adeb72a9c8a6ad64c7418005029b80169c41"},
+    {file = "py_alpaca_api-0.4.0-py3-none-any.whl", hash = "sha256:980a69576d12df3351fd8815a1d507a4b49e3dee7e1b8892b7aa805bc0d807e8"},
+    {file = "py_alpaca_api-0.4.0.tar.gz", hash = "sha256:918a01bfc5b04931b5d0ad7b4032a2dfd226efa7984625eb5bbdeda791f6efe4"},
 ]
 
 [package.dependencies]
@@ -2248,4 +2248,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.3"
-content-hash = "9dff2fec01f3a2bc73a0a0a804dd3169cbd654776dc648ff30270ebd20584731"
+content-hash = "2461e63fa186e0995c8623ac9e7e42257d9539f337af16c643a3c5b7624df9d1"
