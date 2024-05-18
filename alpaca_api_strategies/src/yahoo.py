@@ -1,8 +1,11 @@
+from ast import Str
 import os
 import time
 
 import yfinance as yf
 import pandas as pd
+
+from io import StringIO
 
 from requests import Session
 from requests_cache import CacheMixin, SQLiteCache
@@ -103,9 +106,9 @@ class Yahoo:
             for article in yahoo_news['Articles']:
 
                 request = requests.get(article['Link'])
-                soup = bs(request.content, 'lxml')
-                article_text = soup.find('div', class_='caas-body').get_text(separator=' ', strip=True) # type: ignore
-                
+                soup = bs(request.text, 'lxml')
+                article_text = soup.find('div', attrs={'class': 'caas-body'}).text.strip() if soup.find('div', attrs={'class': 'caas-body'}) else None # type: ignore
+
                 articles_text.append({'Title': article['Title'], 'Symbol': yahoo_news['Symbol'], 'Article': article_text})
                 #session.close()
                 time.sleep(1)
@@ -145,7 +148,10 @@ class Yahoo:
         # response = session.get(site)
         request = requests.get("https://finance.yahoo.com/losers?offset=0&count=100")
         soup = bs(request.content, 'html.parser')
-        tables = pd.read_html(soup.prettify())
+
+
+
+        tables = pd.read_html(StringIO(str(soup)))
         df = tables[0].copy()
         df.columns = tables[0].columns
         # Get the tables from the site

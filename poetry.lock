@@ -1351,13 +1351,13 @@ files = [
 
 [[package]]
 name = "py-alpaca-api"
-version = "0.4.0"
+version = "0.4.4"
 description = "Python package, for communicating with Alpaca Markets REST API."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_api-0.4.0-py3-none-any.whl", hash = "sha256:980a69576d12df3351fd8815a1d507a4b49e3dee7e1b8892b7aa805bc0d807e8"},
-    {file = "py_alpaca_api-0.4.0.tar.gz", hash = "sha256:918a01bfc5b04931b5d0ad7b4032a2dfd226efa7984625eb5bbdeda791f6efe4"},
+    {file = "py_alpaca_api-0.4.4-py3-none-any.whl", hash = "sha256:57c0d90d643695cd48d7b8138f17bcde01919146d3a377153bd76b189a764f52"},
+    {file = "py_alpaca_api-0.4.4.tar.gz", hash = "sha256:c732e29bc977a1d661137a0ab5ccbcc2312e8635656671a27b1410fc45e21a46"},
 ]
 
 [package.dependencies]
@@ -1878,17 +1878,17 @@ files = [
 
 [[package]]
 name = "slack-sdk"
-version = "3.27.1"
+version = "3.27.2"
 description = "The Slack API Platform SDK for Python"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "slack_sdk-3.27.1-py2.py3-none-any.whl", hash = "sha256:c108e509160cf1324c5c8b1f47ca52fb5e287021b8caf9f4ec78ad737ab7b1d9"},
-    {file = "slack_sdk-3.27.1.tar.gz", hash = "sha256:85d86b34d807c26c8bb33c1569ec0985876f06ae4a2692afba765b7a5490d28c"},
+    {file = "slack_sdk-3.27.2-py2.py3-none-any.whl", hash = "sha256:af97158e6ac7f667e158e8036e63dc1f79db9bd36216a33c10fcc49be7c2f30c"},
+    {file = "slack_sdk-3.27.2.tar.gz", hash = "sha256:bb145bf2bd93b60a17cd55c05cb15868c9a07d845b6fb608c798b50bce21cb99"},
 ]
 
 [package.extras]
-optional = ["SQLAlchemy (>=1.4,<3)", "aiodns (>1.0)", "aiohttp (>=3.7.3,<4)", "boto3 (<=2)", "websocket-client (>=1,<2)", "websockets (>=10,<11)", "websockets (>=9.1,<10)"]
+optional = ["SQLAlchemy (>=1.4,<3)", "aiodns (>1.0)", "aiohttp (>=3.7.3,<4)", "boto3 (<=2)", "websocket-client (>=1,<2)", "websockets (>=9.1,<13)"]
 
 [[package]]
 name = "sniffio"
@@ -1959,13 +1959,13 @@ telegram = ["requests"]
 
 [[package]]
 name = "trove-classifiers"
-version = "2024.4.10"
+version = "2024.5.17"
 description = "Canonical source for classifiers on PyPI (pypi.org)."
 optional = false
 python-versions = "*"
 files = [
-    {file = "trove-classifiers-2024.4.10.tar.gz", hash = "sha256:49f40bb6a746b72a1cba4f8d55ee8252169cda0f70802e3fd24f04b7fb25a492"},
-    {file = "trove_classifiers-2024.4.10-py3-none-any.whl", hash = "sha256:678bd6fcc5218d72e3304e27a608acc9b91e17bd00c3f3d8c968497c843ad98b"},
+    {file = "trove_classifiers-2024.5.17-py3-none-any.whl", hash = "sha256:2ebdddebd43e749ac6b6e9b9aa158ab489603dff147cba8714787729cdb9ea37"},
+    {file = "trove_classifiers-2024.5.17.tar.gz", hash = "sha256:d47a6f1c48803091c3fc81f535fecfeef65b558f2b9e4e83df7a79d17bce8bbf"},
 ]
 
 [[package]]
@@ -2248,4 +2248,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.3"
-content-hash = "661cf6c3f98d05ac8626e186ef61d84be786d141e3b7d8d8b2d311084ec1c35e"
+content-hash = "0c893ac32f6201f5a0ec6a875f69e9138acd4a673cd090175423d7fe294eea76"
