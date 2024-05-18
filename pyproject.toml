@@ -20,6 +20,7 @@ slack-sdk = "^3.27.1"
 poetry-plugin-export = "^1.7.1"
 py-alpaca-api = "^0.4.4"
 beautifulsoup4 = "^4.12.3"
+py-alpaca-daily-losers = "^0.1.0"
 
 
 [tool.poetry.group.dev.dependencies]

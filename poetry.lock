@@ -1366,6 +1366,26 @@ pandas = ">=2.2.2,<3.0.0"
 requests = ">=2.31.0,<3.0.0"
 
 [[package]]
+name = "py-alpaca-daily-losers"
+version = "0.1.0"
+description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
+optional = false
+python-versions = "<4.0,>=3.12"
+files = [
+    {file = "py_alpaca_daily_losers-0.1.0-py3-none-any.whl", hash = "sha256:b33558f62b47fd4d802e8642ae9b1a4f9343ac61641c70e067d3cb9da0b21302"},
+    {file = "py_alpaca_daily_losers-0.1.0.tar.gz", hash = "sha256:18713263018c3ca30cfa7ddef87643ca0ad4cb929854cc875f938cc6e33d0432"},
+]
+
+[package.dependencies]
+openai = ">=1.30.1,<2.0.0"
+py-alpaca-api = ">=0.4.4,<0.5.0"
+python-dotenv = ">=1.0.1,<2.0.0"
+requests = ">=2.31.0,<3.0.0"
+slack-sdk = ">=3.27.2,<4.0.0"
+ta = ">=0.11.0,<0.12.0"
+tqdm = ">=4.66.4,<5.0.0"
+
+[[package]]
 name = "pycparser"
 version = "2.22"
 description = "C parser in Python"
@@ -2248,4 +2268,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.3"
-content-hash = "0c893ac32f6201f5a0ec6a875f69e9138acd4a673cd090175423d7fe294eea76"
+content-hash = "4b113039620cb09f45cd139c93c0e5d9b7ead6f7a617ce9f6e64ccddf5811216"
