@@ -1367,13 +1367,13 @@ requests = ">=2.31.0,<3.0.0"
 
 [[package]]
 name = "py-alpaca-daily-losers"
-version = "0.1.0"
+version = "0.1.1"
 description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_daily_losers-0.1.0-py3-none-any.whl", hash = "sha256:b33558f62b47fd4d802e8642ae9b1a4f9343ac61641c70e067d3cb9da0b21302"},
-    {file = "py_alpaca_daily_losers-0.1.0.tar.gz", hash = "sha256:18713263018c3ca30cfa7ddef87643ca0ad4cb929854cc875f938cc6e33d0432"},
+    {file = "py_alpaca_daily_losers-0.1.1-py3-none-any.whl", hash = "sha256:fc4567451e6d08d1751dc383d2ea58eb7ba1d2306cbe57c0890dc680a646d006"},
+    {file = "py_alpaca_daily_losers-0.1.1.tar.gz", hash = "sha256:3f7809f733b58b8d0a368445b43d4eb0d7f460cfe41cd0a07746eb64a876acf0"},
 ]
 
 [package.dependencies]
@@ -2268,4 +2268,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.3"
-content-hash = "4b113039620cb09f45cd139c93c0e5d9b7ead6f7a617ce9f6e64ccddf5811216"
+content-hash = "7da5145c28d49f47bc38fb7cc5cde59e76c9b85b137dbfd84f29c7ee8e2f1d44"
