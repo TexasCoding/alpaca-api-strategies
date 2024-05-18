@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "alpaca-api-strategies"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["TexasCoding <jeff10278@me.com>"]
 readme = "README.md"
@@ -18,7 +18,9 @@ lxml-html-clean = "^0.1.1"
 openai = "^1.25.1"
 slack-sdk = "^3.27.1"
 poetry-plugin-export = "^1.7.1"
-py-alpaca-api = "^0.3.0"
+py-alpaca-api = "^0.4.4"
+beautifulsoup4 = "^4.12.3"
+py-alpaca-daily-losers = "^0.1.1"
 
 
 [tool.poetry.group.dev.dependencies]
