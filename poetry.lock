@@ -1079,13 +1079,13 @@ files = [
 
 [[package]]
 name = "py-alpaca-api"
-version = "0.5.6"
+version = "0.5.8"
 description = "Python package, for communicating with Alpaca Markets REST API."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_api-0.5.6-py3-none-any.whl", hash = "sha256:89a3f9caadbcb8cde546e6b89430d08a40392c0b07019b50cda9184ff6fd365f"},
-    {file = "py_alpaca_api-0.5.6.tar.gz", hash = "sha256:d712013f4cb8a6dfc7344c56f43a64ba9471f80a8ec440fbc6888551267176df"},
+    {file = "py_alpaca_api-0.5.8-py3-none-any.whl", hash = "sha256:3c6d93896660d60e090915405be97f226e8f103d989250b5a0e8d691e09b62c7"},
+    {file = "py_alpaca_api-0.5.8.tar.gz", hash = "sha256:67eadb20ad93c371bae9c6264302d5e81d57982bb2071032495a2115a7b24a15"},
 ]
 
 [package.dependencies]
@@ -1096,18 +1096,18 @@ requests = ">=2.31.0,<3.0.0"
 
 [[package]]
 name = "py-alpaca-daily-losers"
-version = "0.2.6"
+version = "0.2.7"
 description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_daily_losers-0.2.6-py3-none-any.whl", hash = "sha256:84ab96c80dd7ec290ce0b6d9554ebd9ffa13ef731e046fabd2f75f22d70a8d0b"},
-    {file = "py_alpaca_daily_losers-0.2.6.tar.gz", hash = "sha256:9780c8692991505395edc6a5dd0e5739d59fd676d962fdb9f48e55c0b65a3069"},
+    {file = "py_alpaca_daily_losers-0.2.7-py3-none-any.whl", hash = "sha256:14187df374124a8afc590a6be3c8a8afe67a93ab8f7cf37ae588f4bab0c3b330"},
+    {file = "py_alpaca_daily_losers-0.2.7.tar.gz", hash = "sha256:bd8a076a50d87dd4c4bd32b9d818811faaf1d38259360f02987d59d8008c8997"},
 ]
 
 [package.dependencies]
 openai = ">=1.30.1,<2.0.0"
-py-alpaca-api = ">=0.5.1,<0.6.0"
+py-alpaca-api = ">=0.5.8,<0.6.0"
 python-dotenv = ">=1.0.1,<2.0.0"
 requests = ">=2.31.0,<3.0.0"
 slack-sdk = ">=3.27.2,<4.0.0"
