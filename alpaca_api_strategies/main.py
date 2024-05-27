@@ -12,6 +12,7 @@ def main():
         daily_losers.sell_positions_from_criteria()
     else:
         print("Market is closed.")
+        return
 
 
 if __name__ == "__main__":
