@@ -1,5 +1,5 @@
 import pendulum
-from py_alpaca_daily_losers.daily_losers import DailyLosers
+from alpaca_daily_losers.daily_losers import DailyLosers
 
 current_time = pendulum.now("America/New_York")
 
