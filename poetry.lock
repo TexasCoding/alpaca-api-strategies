@@ -1468,13 +1468,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.31.0"
+version = "1.33.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.31.0-py3-none-any.whl", hash = "sha256:82044ee3122113f2a468a1f308a8882324d09556ba5348687c535d3655ee331c"},
-    {file = "openai-1.31.0.tar.gz", hash = "sha256:54ae0625b005d6a3b895db2b8438dae1059cffff0cd262a26e9015c13a29ab06"},
+    {file = "openai-1.33.0-py3-none-any.whl", hash = "sha256:621163b56570897ab8389d187f686a53d4771fd6ce95d481c0a9611fe8bc4229"},
+    {file = "openai-1.33.0.tar.gz", hash = "sha256:1169211a7b326ecbc821cafb427c29bfd0871f9a3e0947dd9e51acb3b0f1df78"},
 ]
 
 [package.dependencies]
@@ -1491,13 +1491,13 @@ datalib = ["numpy (>=1)", "pandas (>=1.2.3)", "pandas-stubs (>=1.1.0.11)"]
 
 [[package]]
 name = "packaging"
-version = "24.0"
+version = "24.1"
 description = "Core utilities for Python packages"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "packaging-24.0-py3-none-any.whl", hash = "sha256:2ddfb553fdf02fb784c234c7ba6ccc288296ceabec964ad2eae3777778130bc5"},
-    {file = "packaging-24.0.tar.gz", hash = "sha256:eb82c5e3e56209074766e6885bb04b8c38a0c015d0a30036ebe7ece34c9989e9"},
+    {file = "packaging-24.1-py3-none-any.whl", hash = "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"},
+    {file = "packaging-24.1.tar.gz", hash = "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002"},
 ]
 
 [[package]]
@@ -1791,13 +1791,13 @@ xmp = ["defusedxml"]
 
 [[package]]
 name = "pkginfo"
-version = "1.11.0"
+version = "1.11.1"
 description = "Query metadata from sdists / bdists / installed packages."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pkginfo-1.11.0-py3-none-any.whl", hash = "sha256:6d4998d1cd42c297af72cc0eab5f5bab1d356fb8a55b828fa914173f8bc1ba05"},
-    {file = "pkginfo-1.11.0.tar.gz", hash = "sha256:dba885aa82e31e80d615119874384923f4e011c2a39b0c4b7104359e36cb7087"},
+    {file = "pkginfo-1.11.1-py3-none-any.whl", hash = "sha256:bfa76a714fdfc18a045fcd684dbfc3816b603d9d075febef17cb6582bea29573"},
+    {file = "pkginfo-1.11.1.tar.gz", hash = "sha256:2e0dca1cf4c8e39644eed32408ea9966ee15e0d324c62ba899a393b3c6b467aa"},
 ]
 
 [package.extras]
@@ -1818,21 +1818,6 @@ files = [
 docs = ["furo (>=2023.9.10)", "proselint (>=0.13)", "sphinx (>=7.2.6)", "sphinx-autodoc-typehints (>=1.25.2)"]
 test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.12)"]
 type = ["mypy (>=1.8)"]
-
-[[package]]
-name = "plotly"
-version = "5.22.0"
-description = "An open-source, interactive data visualization library for Python"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "plotly-5.22.0-py3-none-any.whl", hash = "sha256:68fc1901f098daeb233cc3dd44ec9dc31fb3ca4f4e53189344199c43496ed006"},
-    {file = "plotly-5.22.0.tar.gz", hash = "sha256:859fdadbd86b5770ae2466e542b761b247d1c6b49daed765b95bb8c7063e7469"},
-]
-
-[package.dependencies]
-packaging = "*"
-tenacity = ">=6.2.0"
 
 [[package]]
 name = "pluggy"
@@ -1951,43 +1936,42 @@ files = [
 
 [[package]]
 name = "py-alpaca-api"
-version = "1.0.3"
+version = "2.1.3"
 description = "Python package, for communicating with Alpaca Markets REST API."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_api-1.0.3-py3-none-any.whl", hash = "sha256:65a028c10f2a6f64b02db860cbd0d5285e73e407f0541d0971b7e0d37966fd83"},
-    {file = "py_alpaca_api-1.0.3.tar.gz", hash = "sha256:dc3e01c12a58090818bc9e96bc8543fd73a3f5cae5b7252b2b50437d2291542e"},
-]
-
-[package.dependencies]
-numpy = ">=1.26.4,<2.0.0"
-pandas = ">=2.2.2,<3.0.0"
-pendulum = ">=3.0.0,<4.0.0"
-plotly = ">=5.22.0,<6.0.0"
-prophet = ">=1.1.5,<2.0.0"
-requests = ">=2.31.0,<3.0.0"
-
-[[package]]
-name = "py-alpaca-daily-losers"
-version = "1.0.6"
-description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
-optional = false
-python-versions = "<4.0,>=3.12"
-files = [
-    {file = "py_alpaca_daily_losers-1.0.6-py3-none-any.whl", hash = "sha256:56803cc6021b80b192fe89f99055aca92b3bfcd85514d79156c716e2c47d5d51"},
-    {file = "py_alpaca_daily_losers-1.0.6.tar.gz", hash = "sha256:13afa12e367d79388cb8587e6d842d86c977a665c02808256981cd3b0f4acbda"},
+    {file = "py_alpaca_api-2.1.3-py3-none-any.whl", hash = "sha256:05be89cdb3f50d2bc4bba6bd72c18bc324148306feea5fd6291781e67b06ec38"},
+    {file = "py_alpaca_api-2.1.3.tar.gz", hash = "sha256:00dd83af6d4e99f9717a2db3caf8745dcc2e4460bfc37043d84016f237c83e01"},
 ]
 
 [package.dependencies]
 beautifulsoup4 = ">=4.12.3,<5.0.0"
+pandas = ">=2.2.2,<3.0.0"
+pendulum = ">=3.0.0,<4.0.0"
+prophet = ">=1.1.5,<2.0.0"
+requests = ">=2.32.3,<3.0.0"
+tqdm = ">=4.66.4,<5.0.0"
+yfinance = ">=0.2.40,<0.3.0"
+
+[[package]]
+name = "py-alpaca-daily-losers"
+version = "2.0.0"
+description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
+optional = false
+python-versions = "<4.0,>=3.12"
+files = [
+    {file = "py_alpaca_daily_losers-2.0.0-py3-none-any.whl", hash = "sha256:5ccf560e3c316937c655ad93978b9f0747e01875b77db50721690db700a53b3e"},
+    {file = "py_alpaca_daily_losers-2.0.0.tar.gz", hash = "sha256:ebf27e74610cd2dad44b9f85ea17fa3911be5711308602adda3201c4d6e527f9"},
+]
+
+[package.dependencies]
 openai = ">=1.30.5,<2.0.0"
-py-alpaca-api = ">=1.0.0,<2.0.0"
+py-alpaca-api = ">=2.0.0,<3.0.0"
 python-dotenv = ">=1.0.1,<2.0.0"
 requests = ">=2.32.3,<3.0.0"
 slack-sdk = ">=3.27.2,<4.0.0"
 ta = ">=0.11.0,<0.12.0"
-yfinance = ">=0.2.40,<0.3.0"
 
 [[package]]
 name = "pycodestyle"
@@ -2473,21 +2457,6 @@ numpy = "*"
 pandas = "*"
 
 [[package]]
-name = "tenacity"
-version = "8.3.0"
-description = "Retry code until it succeeds"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "tenacity-8.3.0-py3-none-any.whl", hash = "sha256:3649f6443dbc0d9b01b9d8020a9c4ec7a1ff5f6f3c6c8a036ef371f573fe9185"},
-    {file = "tenacity-8.3.0.tar.gz", hash = "sha256:953d4e6ad24357bceffbc9707bc74349aca9d245f68eb65419cf0c249a1949a2"},
-]
-
-[package.extras]
-doc = ["reno", "sphinx"]
-test = ["pytest", "tornado (>=4.5)", "typeguard"]
-
-[[package]]
 name = "tomlkit"
 version = "0.12.5"
 description = "Style preserving TOML library"
@@ -2531,13 +2500,13 @@ files = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.12.1"
+version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.12.1-py3-none-any.whl", hash = "sha256:6024b58b69089e5a89c347397254e35f1bf02a907728ec7fee9bf0fe837d203a"},
-    {file = "typing_extensions-4.12.1.tar.gz", hash = "sha256:915f5e35ff76f56588223f15fdd5938f9a1cf9195c0de25130c627e4d597f6d1"},
+    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
+    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
 
 [[package]]
@@ -2703,4 +2672,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.3"
-content-hash = "0868f70884679a1d617c5c29de620e2412804c6db6f0db53a72f9c5c9919feef"
+content-hash = "6ae7fbf367552741b698a010597bf458e797f6725c4c06e8061db3f794055584"
