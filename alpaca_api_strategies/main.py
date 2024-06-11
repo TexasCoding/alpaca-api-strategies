@@ -9,7 +9,7 @@ def main():
     if current_time.hour >= 8 and current_time.hour <= 10:
         daily_losers.run()
     elif current_time.hour > 10 and current_time.hour <= 16:
-        daily_losers.sell_positions_from_criteria()
+        daily_losers.close.sell_positions_from_criteria()
     else:
         print("Market is closed.")
         return

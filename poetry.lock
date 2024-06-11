@@ -1325,13 +1325,13 @@ files = [
 
 [[package]]
 name = "more-itertools"
-version = "10.2.0"
+version = "10.3.0"
 description = "More routines for operating on iterables, beyond itertools"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "more-itertools-10.2.0.tar.gz", hash = "sha256:8fccb480c43d3e99a00087634c06dd02b0d50fbf088b380de5a41a015ec239e1"},
-    {file = "more_itertools-10.2.0-py3-none-any.whl", hash = "sha256:686b06abe565edfab151cb8fd385a05651e1fdf8f0a14191e4439283421f8684"},
+    {file = "more-itertools-10.3.0.tar.gz", hash = "sha256:e5d93ef411224fbcef366a6e8ddc4c5781bc6359d43412a65dd5964e46111463"},
+    {file = "more_itertools-10.3.0-py3-none-any.whl", hash = "sha256:ea6a02e24a9161e51faad17a8782b92a0df82c12c1c8886fec7f0c3fa1a1b320"},
 ]
 
 [[package]]
@@ -1956,13 +1956,13 @@ yfinance = ">=0.2.40,<0.3.0"
 
 [[package]]
 name = "py-alpaca-daily-losers"
-version = "2.0.0"
+version = "2.1.0"
 description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_daily_losers-2.0.0-py3-none-any.whl", hash = "sha256:5ccf560e3c316937c655ad93978b9f0747e01875b77db50721690db700a53b3e"},
-    {file = "py_alpaca_daily_losers-2.0.0.tar.gz", hash = "sha256:ebf27e74610cd2dad44b9f85ea17fa3911be5711308602adda3201c4d6e527f9"},
+    {file = "py_alpaca_daily_losers-2.1.0-py3-none-any.whl", hash = "sha256:ca325f8666c99d601d61a245fc7e51563326a0442ec847cacb4d9a48fc186622"},
+    {file = "py_alpaca_daily_losers-2.1.0.tar.gz", hash = "sha256:fa0eaa606fb5dd5c302bf673392a49913adc578bdd0d8ab00c659d638c421cf8"},
 ]
 
 [package.dependencies]
@@ -2390,13 +2390,13 @@ files = [
 
 [[package]]
 name = "slack-sdk"
-version = "3.27.2"
+version = "3.28.0"
 description = "The Slack API Platform SDK for Python"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "slack_sdk-3.27.2-py2.py3-none-any.whl", hash = "sha256:af97158e6ac7f667e158e8036e63dc1f79db9bd36216a33c10fcc49be7c2f30c"},
-    {file = "slack_sdk-3.27.2.tar.gz", hash = "sha256:bb145bf2bd93b60a17cd55c05cb15868c9a07d845b6fb608c798b50bce21cb99"},
+    {file = "slack_sdk-3.28.0-py2.py3-none-any.whl", hash = "sha256:1a47700ae20566575ce494d1d1b6f594b011d06aad28e3b8e28c052cad1d6c4c"},
+    {file = "slack_sdk-3.28.0.tar.gz", hash = "sha256:e6ece5cb70850492637e002e3b0d26d307939f4a33203b88cb274f7475c9a144"},
 ]
 
 [package.extras]
