@@ -630,13 +630,13 @@ pgp = ["gpg"]
 
 [[package]]
 name = "fastjsonschema"
-version = "2.19.1"
+version = "2.20.0"
 description = "Fastest Python implementation of JSON schema"
 optional = false
 python-versions = "*"
 files = [
-    {file = "fastjsonschema-2.19.1-py3-none-any.whl", hash = "sha256:3672b47bc94178c9f23dbb654bf47440155d4db9df5f7bc47643315f9c405cd0"},
-    {file = "fastjsonschema-2.19.1.tar.gz", hash = "sha256:e3126a94bdc4623d3de4485f8d468a12f02a67921315ddc87836d6e456dc789d"},
+    {file = "fastjsonschema-2.20.0-py3-none-any.whl", hash = "sha256:5875f0b0fa7a0043a91e93a9b8f793bcbbba9691e7fd83dca95c28ba26d21f0a"},
+    {file = "fastjsonschema-2.20.0.tar.gz", hash = "sha256:3d48fc5300ee96f5d116f10fe6f28d938e6008f59a6a025c2649475b87f76a23"},
 ]
 
 [package.extras]
@@ -660,18 +660,18 @@ typing = ["typing-extensions (>=4.8)"]
 
 [[package]]
 name = "flake8"
-version = "7.0.0"
+version = "7.1.0"
 description = "the modular source code checker: pep8 pyflakes and co"
 optional = false
 python-versions = ">=3.8.1"
 files = [
-    {file = "flake8-7.0.0-py2.py3-none-any.whl", hash = "sha256:a6dfbb75e03252917f2473ea9653f7cd799c3064e54d4c8140044c5c065f53c3"},
-    {file = "flake8-7.0.0.tar.gz", hash = "sha256:33f96621059e65eec474169085dc92bf26e7b2d47366b70be2f67ab80dc25132"},
+    {file = "flake8-7.1.0-py2.py3-none-any.whl", hash = "sha256:2e416edcc62471a64cea09353f4e7bdba32aeb079b6e360554c659a122b1bc6a"},
+    {file = "flake8-7.1.0.tar.gz", hash = "sha256:48a07b626b55236e0fb4784ee69a465fbf59d79eec1f5b4785c3d3bc57d17aa5"},
 ]
 
 [package.dependencies]
 mccabe = ">=0.7.0,<0.8.0"
-pycodestyle = ">=2.11.0,<2.12.0"
+pycodestyle = ">=2.12.0,<2.13.0"
 pyflakes = ">=3.2.0,<3.3.0"
 
 [[package]]
@@ -1971,13 +1971,13 @@ files = [
 
 [[package]]
 name = "py-alpaca-api"
-version = "2.1.5"
+version = "2.1.6"
 description = "Python package, for communicating with Alpaca Markets REST API."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_api-2.1.5-py3-none-any.whl", hash = "sha256:2e3e307c45ac62cbb3df40208895ee0e12ae7459987dfe0fa89e7c22d76f1859"},
-    {file = "py_alpaca_api-2.1.5.tar.gz", hash = "sha256:d7a504a81dd65b3e76f5547284a5e7f9c37855284b4734391c8fdcb914d88857"},
+    {file = "py_alpaca_api-2.1.6-py3-none-any.whl", hash = "sha256:bbbd0fefb52086057f98decc0a748055b77d611bc37284a6673ecb318dab29d0"},
+    {file = "py_alpaca_api-2.1.6.tar.gz", hash = "sha256:400463810f6a38ddb88fdeb59abe00e22625f9bd1214735b7c7c84686052b910"},
 ]
 
 [package.dependencies]
@@ -1986,19 +1986,17 @@ pandas = ">=2.2.2,<3.0.0"
 pendulum = ">=3.0.0,<4.0.0"
 prophet = ">=1.1.5,<2.0.0"
 requests = ">=2.32.3,<3.0.0"
-rich = ">=13.7.1,<14.0.0"
-tqdm = ">=4.66.4,<5.0.0"
 yfinance = ">=0.2.40,<0.3.0"
 
 [[package]]
 name = "py-alpaca-daily-losers"
-version = "2.1.4"
+version = "2.1.5"
 description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_daily_losers-2.1.4-py3-none-any.whl", hash = "sha256:ee7c09be7ec14333ea8fc3e0ea9c3812162e099bea25afa66e15ce3f3b6c6f2f"},
-    {file = "py_alpaca_daily_losers-2.1.4.tar.gz", hash = "sha256:ef54d06e08a7b8c6886ef16bb65492f89e35f65d042af94b2ba058e1ca54c3ae"},
+    {file = "py_alpaca_daily_losers-2.1.5-py3-none-any.whl", hash = "sha256:c8a94bffda641b9b50510a10fb200fb6d086b0fe31a8802d0c01032d2a334972"},
+    {file = "py_alpaca_daily_losers-2.1.5.tar.gz", hash = "sha256:98d7d7e194888a16786c21b99f18d802f58dc4304cbe003032b4dbec165d4a4d"},
 ]
 
 [package.dependencies]
@@ -2006,19 +2004,18 @@ openai = ">=1.30.5,<2.0.0"
 py-alpaca-api = ">=2.0.0,<3.0.0"
 python-dotenv = ">=1.0.1,<2.0.0"
 requests = ">=2.32.3,<3.0.0"
-rich = ">=13.7.1,<14.0.0"
 slack-sdk = ">=3.27.2,<4.0.0"
 ta = ">=0.11.0,<0.12.0"
 
 [[package]]
 name = "pycodestyle"
-version = "2.11.1"
+version = "2.12.0"
 description = "Python style guide checker"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pycodestyle-2.11.1-py2.py3-none-any.whl", hash = "sha256:44fe31000b2d866f2e41841b18528a505fbd7fef9017b04eff4e2648a0fadc67"},
-    {file = "pycodestyle-2.11.1.tar.gz", hash = "sha256:41ba0e7afc9752dfb53ced5489e89f8186be00e599e712660695b7a75ff2663f"},
+    {file = "pycodestyle-2.12.0-py2.py3-none-any.whl", hash = "sha256:949a39f6b86c3e1515ba1787c2022131d165a8ad271b11370a8819aa070269e4"},
+    {file = "pycodestyle-2.12.0.tar.gz", hash = "sha256:442f950141b4f43df752dd303511ffded3a04c2b6fb7f65980574f0c31e6e79c"},
 ]
 
 [[package]]
@@ -2741,4 +2738,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.3"
-content-hash = "6ae7fbf367552741b698a010597bf458e797f6725c4c06e8061db3f794055584"
+content-hash = "15a7d675f70e0dd6c84e7b6f9d66ea82ea14237e5bc7d03f404564affbb91d03"
