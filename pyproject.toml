@@ -11,6 +11,7 @@ python-dotenv = "^1.0.1"
 poetry-plugin-export = "^1.7.1"
 py-alpaca-daily-losers = "^2.0.0"
 rich = "^13.7.1"
+numpy = "^1.26"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"
