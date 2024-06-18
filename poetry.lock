@@ -2035,13 +2035,13 @@ yfinance = {version = ">=0.2.40,<0.3.0", extras = ["optional"]}
 
 [[package]]
 name = "py-alpaca-daily-losers"
-version = "2.2.1"
+version = "2.2.2"
 description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_daily_losers-2.2.1-py3-none-any.whl", hash = "sha256:7f6c9769aa10fe873ba886ce0c5e2f6c7b4f830e1d2aec2c2d57225c2efb934e"},
-    {file = "py_alpaca_daily_losers-2.2.1.tar.gz", hash = "sha256:b869248cecab98d27081bc03b11045343d784010f6cd2baddd3909fb38d72721"},
+    {file = "py_alpaca_daily_losers-2.2.2-py3-none-any.whl", hash = "sha256:e10e4b3964e953c09803a4a3b58655b869b2139599435800685e7e959f6502cb"},
+    {file = "py_alpaca_daily_losers-2.2.2.tar.gz", hash = "sha256:e1a5b0b3b1d5169c270f47e55f2f449294a455ac16c0358f464731e14328e8b1"},
 ]
 
 [package.dependencies]
@@ -2449,13 +2449,13 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "requests-cache"
-version = "1.2.0"
+version = "1.2.1"
 description = "A persistent cache for python requests"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "requests_cache-1.2.0-py3-none-any.whl", hash = "sha256:490324301bf0cb924ff4e6324bd2613453e7e1f847353928b08adb0fdfb7f722"},
-    {file = "requests_cache-1.2.0.tar.gz", hash = "sha256:db1c709ca343cc1cd5b6c8b1a5387298eceed02306a6040760db538c885e3838"},
+    {file = "requests_cache-1.2.1-py3-none-any.whl", hash = "sha256:1285151cddf5331067baa82598afe2d47c7495a1334bfe7a7d329b43e9fd3603"},
+    {file = "requests_cache-1.2.1.tar.gz", hash = "sha256:68abc986fdc5b8d0911318fbb5f7c80eebcd4d01bfacc6685ecf8876052511d1"},
 ]
 
 [package.dependencies]
