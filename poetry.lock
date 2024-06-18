@@ -2035,13 +2035,13 @@ yfinance = {version = ">=0.2.40,<0.3.0", extras = ["optional"]}
 
 [[package]]
 name = "py-alpaca-daily-losers"
-version = "2.1.9"
+version = "2.2.1"
 description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_daily_losers-2.1.9-py3-none-any.whl", hash = "sha256:672fbdf37a8898c2128403b56348f90da004866ec0e9d175dddd529a343c1468"},
-    {file = "py_alpaca_daily_losers-2.1.9.tar.gz", hash = "sha256:8cf257f41f5f2288e76ffee51d76f95fdf926f05c3f143d0534c932a524e059b"},
+    {file = "py_alpaca_daily_losers-2.2.1-py3-none-any.whl", hash = "sha256:7f6c9769aa10fe873ba886ce0c5e2f6c7b4f830e1d2aec2c2d57225c2efb934e"},
+    {file = "py_alpaca_daily_losers-2.2.1.tar.gz", hash = "sha256:b869248cecab98d27081bc03b11045343d784010f6cd2baddd3909fb38d72721"},
 ]
 
 [package.dependencies]
@@ -2052,6 +2052,7 @@ python-dotenv = ">=1.0.1,<2.0.0"
 requests = ">=2.32.3,<3.0.0"
 slack-sdk = ">=3.27.2,<4.0.0"
 ta = ">=0.11.0,<0.12.0"
+tenacity = ">=8.4.1,<9.0.0"
 
 [[package]]
 name = "pycodestyle"
@@ -2630,6 +2631,21 @@ files = [
 [package.dependencies]
 numpy = "*"
 pandas = "*"
+
+[[package]]
+name = "tenacity"
+version = "8.4.1"
+description = "Retry code until it succeeds"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "tenacity-8.4.1-py3-none-any.whl", hash = "sha256:28522e692eda3e1b8f5e99c51464efcc0b9fc86933da92415168bc1c4e2308fa"},
+    {file = "tenacity-8.4.1.tar.gz", hash = "sha256:54b1412b878ddf7e1f1577cd49527bad8cdef32421bd599beac0c6c3f10582fd"},
+]
+
+[package.extras]
+doc = ["reno", "sphinx"]
+test = ["pytest", "tornado (>=4.5)", "typeguard"]
 
 [[package]]
 name = "tomlkit"
