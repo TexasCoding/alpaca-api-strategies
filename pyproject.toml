@@ -4,6 +4,7 @@ version = "0.2.6"
 description = ""
 authors = ["TexasCoding <jeff10278@me.com>"]
 readme = "README.md"
+packages = [{include = "alpaca_api_strategies"}]
 
 [tool.poetry.dependencies]
 python = "3.12.3"
