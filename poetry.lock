@@ -2035,20 +2035,19 @@ yfinance = {version = ">=0.2.40,<0.3.0", extras = ["optional"]}
 
 [[package]]
 name = "py-alpaca-daily-losers"
-version = "2.2.6"
+version = "2.2.7"
 description = "Daily Losers strategy, uses py-alpaca-api for Alpaca Markets integration."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "py_alpaca_daily_losers-2.2.6-py3-none-any.whl", hash = "sha256:39029c3b4bd6b80a16c5df5604f0866bfbe068e4666b6f4db06940ab4c476401"},
-    {file = "py_alpaca_daily_losers-2.2.6.tar.gz", hash = "sha256:72df16dd5db5d834641691b82d3fc28ab81ebef7da7329e044c4773ea2481ed3"},
+    {file = "py_alpaca_daily_losers-2.2.7-py3-none-any.whl", hash = "sha256:8c946778348c0898d7c456f80c31a3ec2ec57ecd8619bac4cd9bcab68150c2ad"},
+    {file = "py_alpaca_daily_losers-2.2.7.tar.gz", hash = "sha256:132a1f80092f73d3fe3b546de6de22516ee33de246756398ab9f76a5ad7cc395"},
 ]
 
 [package.dependencies]
 numpy = ">=1.26,<2.0"
 openai = ">=1.30.5,<2.0.0"
 py-alpaca-api = ">=2.0.0,<3.0.0"
-python-dotenv = ">=1.0.1,<2.0.0"
 requests = ">=2.32.3,<3.0.0"
 slack-sdk = ">=3.27.2,<4.0.0"
 ta = ">=0.11.0,<0.12.0"
